@@ -11,5 +11,6 @@ PDFs hier ablegen. Die Übersicht (`index.html`) verlinkt eine Datei automatisch
 | `Lohnausweis_Abzuege_Theorieblatt.pdf` | Lohn und Steuern |
 | `Steuern_Theorieblatt.pdf` | Lohn und Steuern |
 | `Progression_MWST.pdf` | Lohn und Steuern |
+| `lohnabrechnung-beispiel.pdf` | Lohn und Steuern |
 
 Lösungsblätter nicht hier ablegen: Das Repository ist öffentlich.
