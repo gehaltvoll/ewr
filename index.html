@@ -1,72 +1,147 @@
 <!DOCTYPE html>
 <!-- Entscheidungen:
 Einsatztyp: Übersichtsseite (Index) für Lernmaterial EWR · Zielgruppe: Schüler:innen · Gerät: gemischt
-Funktionen: gruppierte Liste aller HTML-Seiten im Ordner, Suchfeld; beim Laden ergänzt ein Skript über die GitHub-API neue Dateien automatisch unter «Weitere Seiten» (fällt bei Fehler auf die feste Liste zurück)
-Datenhaltung: keine · Variante: sachlich (Nord, Open Sans), hell/dunkel nach Systemeinstellung
+Inhalt: alle interaktiven Seiten als Karten (eigenes Linien-Icon, Kurzbeschreibung, Art: Rechner/Quiz/Diagramme/Simulation), in drei Themengruppen;
+  pro Gruppe die Arbeits- und Theorieblätter vom 12.11.2026 (ohne Lösungsblätter, da das Repo öffentlich ist).
+Arbeitsblätter: Link erscheint automatisch, sobald arbeitsblaetter/<Dateiname>.pdf im Repo liegt (GitHub-API); sonst «PDF folgt».
+Weitere neue HTML-Dateien im Hauptordner erscheinen automatisch unter «Weitere Seiten». Suchfeld filtert Seiten und Blätter.
+Datenhaltung: nur gewählte Variante (localStorage). Varianten: «Sachlich» (flache Karten, dünne Rahmen) · «Lebendig» (farbige Flächen je Gruppe, runde Karten) – umschaltbar.
 -->
 <html lang="de-CH">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EWR – Lernmaterial</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap">
 <style>
-/* Layout: Titel und Suche oben, darunter Themengruppen als Kartenraster */
-:root{--nord0:#2E3440;--nord1:#3B4252;--nord2:#434C5E;--nord3:#4C566A;--nord4:#D8DEE9;--nord5:#E5E9F0;--nord6:#ECEFF4;--nord8:#88C0D0;--nord9:#81A1C1;--nord10:#5E81AC;--nord12:#D08770;--nord14:#A3BE8C;--nord15:#B48EAD;
- --bg:var(--nord6);--surface:var(--nord5);--line:var(--nord4);--text:var(--nord0);--muted:var(--nord3);--accent:var(--nord10);
+/* Layout: Kopf mit Kennzahlen und Suche, dann pro Thema ein Kartenraster mit den Arbeitsblättern darunter */
+:root{--nord0:#2E3440;--nord1:#3B4252;--nord2:#434C5E;--nord3:#4C566A;--nord4:#D8DEE9;--nord5:#E5E9F0;--nord6:#ECEFF4;--nord7:#8FBCBB;--nord8:#88C0D0;--nord9:#81A1C1;--nord10:#5E81AC;--nord11:#BF616A;--nord12:#D08770;--nord13:#EBCB8B;--nord14:#A3BE8C;--nord15:#B48EAD;
+ --bg:var(--nord6);--surface:var(--nord5);--line:var(--nord4);--text:var(--nord0);--muted:var(--nord3);--accent:var(--nord10);--radius:8px;
  --font:"Open Sans",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:var(--nord0);--surface:var(--nord1);--line:var(--nord2);--text:var(--nord6);--muted:var(--nord4);--accent:var(--nord8);color-scheme:dark}}
 :root[data-theme="dark"]{--bg:var(--nord0);--surface:var(--nord1);--line:var(--nord2);--text:var(--nord6);--muted:var(--nord4);--accent:var(--nord8);color-scheme:dark}
+:root[data-variant="lebendig"]{--radius:18px}
 *{box-sizing:border-box}
 html{font-size:17px}
-body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.6}
-.wrap{max-width:960px;margin:0 auto;padding:32px 16px 64px;display:grid;gap:28px}
-h1{font-size:2.2rem;line-height:1.15;margin:0;font-weight:700;text-wrap:balance}
-.lead{margin:6px 0 0;color:var(--muted);max-width:60ch}
-input{font:inherit;color:inherit;width:100%;max-width:420px;padding:8px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.55}
+.wrap{max-width:1080px;margin:0 auto;padding:28px 16px 64px;display:grid;gap:32px}
+header{display:grid;gap:14px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.kicker{margin:0;color:var(--muted);font-size:.85rem;font-weight:600;letter-spacing:.02em}
+h1{font-size:2.3rem;line-height:1.1;margin:2px 0 0;font-weight:700;text-wrap:balance}
+.lead{margin:0;color:var(--muted);max-width:62ch}
+.facts{display:flex;gap:10px;flex-wrap:wrap}
+.fact{display:flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;font-size:.9rem;background:var(--surface)}
+.fact b{font-variant-numeric:tabular-nums}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.seg button{font:inherit;color:inherit;background:transparent;border:0;padding:6px 14px;cursor:pointer;font-size:.88rem}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--bg);font-weight:600}
+.search{position:relative;max-width:440px}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;stroke:var(--muted)}
+input{font:inherit;color:inherit;width:100%;padding:9px 12px 9px 38px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
 :focus-visible{outline:3px solid var(--nord9);outline-offset:2px}
-.groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px}
-.group{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--c);border-radius:6px;padding:16px 18px}
+svg.ic{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+svg.sm{width:18px;height:18px}
+.group{--c:var(--nord15);display:grid;gap:14px}
 .g0{--c:var(--nord15)}.g1{--c:var(--nord12)}.g2{--c:var(--nord14)}.g3{--c:var(--nord9)}
-h2{font-size:1.05rem;font-weight:600;margin:0 0 8px}
-ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
-a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
-a:hover{text-decoration-thickness:2px}
+h2{display:flex;align-items:center;gap:10px;font-size:1.3rem;font-weight:700;margin:0;text-wrap:balance}
+.gico{display:grid;place-items:center;width:38px;height:38px;border-radius:10px;background:color-mix(in srgb,var(--c) 35%,transparent);color:var(--text)}
+ul{list-style:none;margin:0;padding:0}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.card{display:flex;gap:14px;align-items:flex-start;height:100%;padding:16px;border:1px solid var(--line);border-left:4px solid var(--c);border-radius:var(--radius);background:var(--surface);color:var(--text);text-decoration:none;position:relative;transition:transform .15s,box-shadow .15s}
+.card:hover{transform:translateY(-2px);box-shadow:0 6px 16px -10px var(--nord3)}
+.card:hover .t{text-decoration:underline;text-underline-offset:3px}
+.badge{display:grid;place-items:center;width:44px;height:44px;border-radius:10px;background:var(--bg);color:var(--accent);flex:none}
+.ct{display:grid;gap:2px;flex:1;min-width:0}
+.t{font-weight:600;color:var(--accent);line-height:1.3}
+.d{font-size:.9rem;color:var(--muted);line-height:1.45}
+.tag{font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap;align-self:flex-start}
+.sheets{padding:12px 16px;border:1px dashed var(--line);border-radius:var(--radius)}
+.sheets h3{margin:0 0 8px;font-size:.85rem;font-weight:600;color:var(--muted)}
+.sheets ul{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:6px 18px}
+.ws{display:flex;align-items:center;gap:8px;font-size:.92rem}
+.ws svg{color:var(--muted)}
+.wst{flex:1}
+.wsl{font-size:.75rem;color:var(--muted);white-space:nowrap}
+.ws a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+.ws.ok svg{color:var(--accent)}
 [hidden]{display:none!important}
-footer{font-size:.85rem;color:var(--muted)}
+footer{font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
+/* Variante «Lebendig» */
+:root[data-variant="lebendig"] h1{font-size:2.7rem}
+:root[data-variant="lebendig"] .group{padding:20px;border-radius:24px;background:color-mix(in srgb,var(--c) 16%,var(--bg))}
+:root[data-variant="lebendig"] .card{border:0;background:var(--bg);box-shadow:0 1px 0 var(--line)}
+:root[data-variant="lebendig"] .badge{background:color-mix(in srgb,var(--c) 45%,var(--bg));color:var(--nord0);border-radius:14px}
+:root[data-variant="lebendig"] .gico{background:var(--c);color:var(--nord0);border-radius:14px}
+:root[data-variant="lebendig"] .sheets{border:0;background:color-mix(in srgb,var(--bg) 70%,transparent)}
+:root[data-variant="lebendig"] .tag{background:color-mix(in srgb,var(--c) 30%,var(--bg));border:0;color:var(--text)}
+@media (max-width:420px){h1{font-size:1.9rem}.cards{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.card{transition:none}.card:hover{transform:none}}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
- <h1>EWR – Lernmaterial</h1>
- <p class="lead">Interaktive Seiten zu Einführung in Wirtschaft und Recht: Vorsorge, Lohn und Steuern, Volkswirtschaft.</p>
+ <div class="top">
+  <div><p class="kicker">Kantonsschule Zürcher Unterland · EWR</p><h1>Wirtschaft und Recht interaktiv</h1></div>
+  <div class="seg" role="group" aria-label="Darstellung"><button id="v-s" aria-pressed="true">Sachlich</button><button id="v-l" aria-pressed="false">Lebendig</button></div>
+ </div>
+ <p class="lead">Rechner, Simulationen und Diagramme zu Vorsorge, Lohn und Steuern sowie zur Schweizer Volkswirtschaft. Unter jedem Thema findest du die passenden Arbeitsblätter.</p>
+ <div class="facts">
+  <span class="fact"><svg class="ic sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V4M4 20h16"/><path d="m7 15 4-4 3 3 5-6"/></svg><b id="nPages">10</b> interaktive Seiten</span>
+  <span class="fact"><svg class="ic sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h6"/></svg><b>7</b> Arbeits- und Theorieblätter</span>
+ </div>
+ <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+  <label for="q" hidden>Seite oder Arbeitsblatt suchen</label><input id="q" type="search" placeholder="Suchen, z. B. AHV, Steuern, BIP" autocomplete="off" aria-label="Seite oder Arbeitsblatt suchen"></div>
 </header>
-<div><label for="q" class="lead" style="display:block;margin-bottom:4px">Seite suchen</label><input id="q" type="search" placeholder="z. B. AHV, Steuern, BIP" autocomplete="off"></div>
-<main class="groups" id="groups">
-<section class="group g0"><h2>Vorsorge und Alter</h2><ul><li><a href="Drei%20S%C3%A4ulen%20im%20Alter.html">Drei Säulen im Alter</a></li><li><a href="So%20entsteht%20die%20AHV-Rente.html">So entsteht die AHV-Rente</a></li><li><a href="Wer%20lebt%20l%C3%A4nger%2016%20oder%2075.html">Wer lebt länger: 16 oder 75?</a></li></ul></section>
-<section class="group g1"><h2>Lohn und Steuern</h2><ul><li><a href="Lohnabrechnung%20erkl%C3%A4rt.html">Lohnabrechnung erklärt</a></li><li><a href="Vom%20Lohn%20zum%20steuerbaren%20Einkommen.html">Vom Lohn zum steuerbaren Einkommen</a></li><li><a href="Steuertreppe%20Z%C3%BCrich.html">Steuertreppe Zürich</a></li><li><a href="Mehrwertsteuer%20erkl%C3%A4rt.html">Mehrwertsteuer erklärt</a></li></ul></section>
-<section class="group g2"><h2>Volkswirtschaft und Bevölkerung</h2><ul><li><a href="BIP%20Schweiz%201980%E2%80%932025.html">BIP Schweiz 1980–2025</a></li><li><a href="Erwerbsquote%20Schweiz%20im%20Vergleich.html">Erwerbsquote Schweiz im Vergleich</a></li><li><a href="Bev%C3%B6lkerung%20Schweiz.html">Bevölkerung Schweiz</a></li></ul></section>
-<section class="group g3" id="weitere" hidden><h2>Weitere Seiten</h2><ul id="weitere-list"></ul></section>
+<main style="display:grid;gap:32px">
+<section class="group g0"><h2><span class="gico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V10M10 21V10M14 21V10M19 21V10M2 10l10-6 10 6z"/></svg></span>Vorsorge und Alter</h2><ul class="cards"><li><a class="card" href="Drei%20S%C3%A4ulen%20im%20Alter.html" data-search="drei säulen im alter renteneinkommen aus ahv, pensionskasse und säule 3a berechnen. rechner">
+<span class="badge"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V10M10 21V10M14 21V10M19 21V10M2 10l10-6 10 6z"/></svg></span><span class="ct"><span class="t">Drei Säulen im Alter</span><span class="d">Renteneinkommen aus AHV, Pensionskasse und Säule 3a berechnen.</span></span><span class="tag">Rechner</span></a></li><li><a class="card" href="So%20entsteht%20die%20AHV-Rente.html" data-search="so entsteht die ahv-rente die rentenformel in sechs schritten, mit splitting und 13. ahv-rente. rechner">
+<span class="badge"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span class="ct"><span class="t">So entsteht die AHV-Rente</span><span class="d">Die Rentenformel in sechs Schritten, mit Splitting und 13. AHV-Rente.</span></span><span class="tag">Rechner</span></a></li><li><a class="card" href="Wer%20lebt%20l%C3%A4nger%2016%20oder%2075.html" data-search="wer lebt länger: 16 oder 75? sterbetafeln, überlebenskurven und eine sinkende sterblichkeit. simulation">
+<span class="badge"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg></span><span class="ct"><span class="t">Wer lebt länger: 16 oder 75?</span><span class="d">Sterbetafeln, Überlebenskurven und eine sinkende Sterblichkeit.</span></span><span class="tag">Simulation</span></a></li></ul><div class="sheets"><h3>Arbeitsblätter dazu</h3><ul><li class="ws" data-file="Altersvorsorge_Theorieblatt" data-search="theorie: altersvorsorge arbeitsblatt"><svg class="ic sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h6"/></svg><span class="wst">Theorie: Altersvorsorge</span><span class="wsl">PDF folgt</span></li><li class="ws" data-file="Altersvorsorge_Arbeitsblatt" data-search="arbeitsblatt: 3-säulen-system arbeitsblatt"><svg class="ic sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h6"/></svg><span class="wst">Arbeitsblatt: 3-Säulen-System</span><span class="wsl">PDF folgt</span></li><li class="ws" data-file="Finanzierung_drei_Saeulen" data-search="wer bezahlt die drei säulen? arbeitsblatt"><svg class="ic sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h6"/></svg><span class="wst">Wer bezahlt die drei Säulen?</span><span class="wsl">PDF folgt</span></li><li class="ws" data-file="Pensionskasse_Rente_Theorieblatt" data-search="theorie: vom guthaben zur rente arbeitsblatt"><svg class="ic sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h6"/></svg><span class="wst">Theorie: vom Guthaben zur Rente</span><span class="wsl">PDF folgt</span></li></ul></div></section>
+<section class="group g1"><h2><span class="gico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span>Lohn und Steuern</h2><ul class="cards"><li><a class="card" href="Lohnabrechnung%20erkl%C3%A4rt.html" data-search="lohnabrechnung erklärt jede zeile der lohnabrechnung anklicken und verstehen. rechner">
+<span class="badge"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span><span class="ct"><span class="t">Lohnabrechnung erklärt</span><span class="d">Jede Zeile der Lohnabrechnung anklicken und verstehen.</span></span><span class="tag">Rechner</span></a></li><li><a class="card" href="Vom%20Lohn%20zum%20steuerbaren%20Einkommen.html" data-search="vom lohn zum steuerbaren einkommen vom bruttolohn bis zum steuerbaren einkommen, kanton zürich 2026. rechner">
+<span class="badge"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16l-6 8v6l-4 2v-8z"/></svg></span><span class="ct"><span class="t">Vom Lohn zum steuerbaren Einkommen</span><span class="d">Vom Bruttolohn bis zum steuerbaren Einkommen, Kanton Zürich 2026.</span></span><span class="tag">Rechner</span></a></li><li><a class="card" href="Steuertreppe%20Z%C3%BCrich.html" data-search="steuertreppe zürich staats- und gemeindesteuer schritt für schritt, tarif 2026. rechner">
+<span class="badge"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h5v-5h5v-5h5V5h3"/></svg></span><span class="ct"><span class="t">Steuertreppe Zürich</span><span class="d">Staats- und Gemeindesteuer Schritt für Schritt, Tarif 2026.</span></span><span class="tag">Rechner</span></a></li><li><a class="card" href="Mehrwertsteuer%20erkl%C3%A4rt.html" data-search="mehrwertsteuer erklärt wer die mwst bezahlt und wen sie wie stark trifft. quiz">
+<span class="badge"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20 20 4"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/></svg></span><span class="ct"><span class="t">Mehrwertsteuer erklärt</span><span class="d">Wer die MWST bezahlt und wen sie wie stark trifft.</span></span><span class="tag">Quiz</span></a></li></ul><div class="sheets"><h3>Arbeitsblätter dazu</h3><ul><li class="ws" data-file="Lohnausweis_Abzuege_Theorieblatt" data-search="theorie: lohnausweis und abzüge arbeitsblatt"><svg class="ic sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h6"/></svg><span class="wst">Theorie: Lohnausweis und Abzüge</span><span class="wsl">PDF folgt</span></li><li class="ws" data-file="Steuern_Theorieblatt" data-search="theorie: steuern arbeitsblatt"><svg class="ic sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h6"/></svg><span class="wst">Theorie: Steuern</span><span class="wsl">PDF folgt</span></li><li class="ws" data-file="Progression_MWST" data-search="progression und mehrwertsteuer arbeitsblatt"><svg class="ic sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h6"/></svg><span class="wst">Progression und Mehrwertsteuer</span><span class="wsl">PDF folgt</span></li></ul></div></section>
+<section class="group g2"><h2><span class="gico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V4M4 20h16"/><path d="m7 15 4-4 3 3 5-6"/></svg></span>Volkswirtschaft und Bevölkerung</h2><ul class="cards"><li><a class="card" href="BIP%20Schweiz%201980%E2%80%932025.html" data-search="bip schweiz 1980–2025 wachstum, verwendung und produktionsfaktoren, mit quiz. diagramme">
+<span class="badge"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V4M4 20h16"/><path d="m7 15 4-4 3 3 5-6"/></svg></span><span class="ct"><span class="t">BIP Schweiz 1980–2025</span><span class="d">Wachstum, Verwendung und Produktionsfaktoren, mit Quiz.</span></span><span class="tag">Diagramme</span></a></li><li><a class="card" href="Erwerbsquote%20Schweiz%20im%20Vergleich.html" data-search="erwerbsquote schweiz im vergleich wer arbeitet, wie viel, und die schweiz im ländervergleich. diagramme">
+<span class="badge"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 13h18"/></svg></span><span class="ct"><span class="t">Erwerbsquote Schweiz im Vergleich</span><span class="d">Wer arbeitet, wie viel, und die Schweiz im Ländervergleich.</span></span><span class="tag">Diagramme</span></a></li><li><a class="card" href="Bev%C3%B6lkerung%20Schweiz.html" data-search="bevölkerung schweiz wachstum, alterung und folgen für die ahv bis 2055. diagramme">
+<span class="badge"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M15 20c0-2.5 1.5-4.5 4-4.5 1 0 2 .3 2 .3"/></svg></span><span class="ct"><span class="t">Bevölkerung Schweiz</span><span class="d">Wachstum, Alterung und Folgen für die AHV bis 2055.</span></span><span class="tag">Diagramme</span></a></li></ul></section>
+<section class="group g3" id="weitere" hidden><h2><span class="gico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>Weitere Seiten</h2><ul class="cards" id="weitere-list"></ul></section>
+<p id="none" class="lead" hidden>Keine Seite und kein Arbeitsblatt passt zur Suche.</p>
 </main>
-<p id="none" class="lead" hidden>Keine Seite passt zur Suche.</p>
-<footer>Kantonsschule Zürcher Unterland · P. Habegger</footer>
+<footer>Kantonsschule Zürcher Unterland · P. Habegger · Zahlen Stand 2026, Quellen jeweils auf den einzelnen Seiten.</footer>
 </div>
 <script>
-const q=document.getElementById('q');
-function filter(){const t=q.value.trim().toLowerCase();let any=false;
- document.querySelectorAll('.group').forEach(g=>{let n=0;g.querySelectorAll('li').forEach(li=>{const m=!t||li.textContent.toLowerCase().includes(t);li.hidden=!m;if(m)n++});g.hidden=n===0;if(n)any=true});
- document.getElementById('none').hidden=any;}
-q.addEventListener('input',filter);
-// Neue Dateien automatisch ergänzen (GitHub-API); bei Fehler bleibt die feste Liste
-(async()=>{try{
- const res=await fetch('https://api.github.com/repos/gehaltvoll/ewr/contents/');if(!res.ok)return;
- const known=new Set([...document.querySelectorAll('.group a')].map(a=>decodeURIComponent(a.getAttribute('href'))));
- const list=document.getElementById('weitere-list');let added=0;
- for(const f of await res.json()){if(f.type!=='file'||!f.name.endsWith('.html')||f.name==='index.html'||known.has(f.name))continue;
-  const li=document.createElement('li'),a=document.createElement('a');a.href=encodeURIComponent(f.name);a.textContent=f.name.replace(/\.html$/,'');li.append(a);list.append(li);added++}
- if(added){document.getElementById('weitere').hidden=false;filter()}
-}catch(e){}})();
+const $=id=>document.getElementById(id);
+function setV(v){document.documentElement.dataset.variant=v;$('v-s').setAttribute('aria-pressed',v==='sachlich');$('v-l').setAttribute('aria-pressed',v==='lebendig');try{localStorage.setItem('ewr-index-variant',v)}catch(e){}}
+$('v-s').onclick=()=>setV('sachlich');$('v-l').onclick=()=>setV('lebendig');
+try{setV(localStorage.getItem('ewr-index-variant')||'sachlich')}catch(e){setV('sachlich')}
+function filter(){const t=$('q').value.trim().toLowerCase();let any=false;
+ document.querySelectorAll('.group').forEach(g=>{if(g.id==='weitere'&&!g.querySelector('li'))return;let n=0;
+  g.querySelectorAll('[data-search]').forEach(el=>{const m=!t||el.dataset.search.includes(t);(el.closest('li')||el).hidden=!m;if(m)n++});
+  const sh=g.querySelector('.sheets');if(sh)sh.hidden=![...sh.querySelectorAll('li')].some(li=>!li.hidden);
+  g.hidden=n===0;if(n)any=true});
+ $('none').hidden=any}
+$('q').addEventListener('input',filter);
+const API='https://api.github.com/repos/gehaltvoll/ewr/contents/';
+const svgNeu='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+(async()=>{
+ try{const r=await fetch(API);if(r.ok){
+  const known=new Set([...document.querySelectorAll('a.card')].map(a=>decodeURIComponent(a.getAttribute('href'))));
+  const list=$('weitere-list');let n=0;
+  for(const f of await r.json()){if(f.type!=='file'||!f.name.endsWith('.html')||f.name==='index.html'||known.has(f.name))continue;
+   const t=f.name.replace(/\.html$/,'');const li=document.createElement('li');
+   li.innerHTML=`<a class="card" href="${encodeURIComponent(f.name)}"><span class="badge">${svgNeu}</span><span class="ct"><span class="t"></span><span class="d">Neu im Ordner</span></span></a>`;
+   li.querySelector('.t').textContent=t;li.querySelector('a').dataset.search=t.toLowerCase();list.append(li);n++}
+  if(n){$('weitere').hidden=false;$('nPages').textContent=document.querySelectorAll('a.card').length;filter()}}}catch(e){}
+ try{const r=await fetch(API+'arbeitsblaetter');if(!r.ok)return;
+  const files=new Map((await r.json()).map(f=>[f.name,f]));
+  document.querySelectorAll('.ws').forEach(li=>{const name=li.dataset.file+'.pdf';if(!files.has(name))return;
+   const span=li.querySelector('.wst'),a=document.createElement('a');a.href='arbeitsblaetter/'+encodeURIComponent(name);a.textContent=span.textContent;span.replaceChildren(a);
+   li.querySelector('.wsl').textContent='PDF';li.classList.add('ok')})}catch(e){}
+})();
 </script>
 </body>
 </html>
