@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<!-- Entscheidungen:
+Einsatztyp: Übersichtsseite (Index) für Lernmaterial EWR · Zielgruppe: Schüler:innen · Gerät: gemischt
+Funktionen: gruppierte Liste aller HTML-Seiten im Ordner, Suchfeld; beim Laden ergänzt ein Skript über die GitHub-API neue Dateien automatisch unter «Weitere Seiten» (fällt bei Fehler auf die feste Liste zurück)
+Datenhaltung: keine · Variante: sachlich (Nord, Open Sans), hell/dunkel nach Systemeinstellung
+-->
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EWR – Lernmaterial</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap">
+<style>
+/* Layout: Titel und Suche oben, darunter Themengruppen als Kartenraster */
+:root{--nord0:#2E3440;--nord1:#3B4252;--nord2:#434C5E;--nord3:#4C566A;--nord4:#D8DEE9;--nord5:#E5E9F0;--nord6:#ECEFF4;--nord8:#88C0D0;--nord9:#81A1C1;--nord10:#5E81AC;--nord12:#D08770;--nord14:#A3BE8C;--nord15:#B48EAD;
+ --bg:var(--nord6);--surface:var(--nord5);--line:var(--nord4);--text:var(--nord0);--muted:var(--nord3);--accent:var(--nord10);
+ --font:"Open Sans",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:var(--nord0);--surface:var(--nord1);--line:var(--nord2);--text:var(--nord6);--muted:var(--nord4);--accent:var(--nord8);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:var(--nord0);--surface:var(--nord1);--line:var(--nord2);--text:var(--nord6);--muted:var(--nord4);--accent:var(--nord8);color-scheme:dark}
+*{box-sizing:border-box}
+html{font-size:17px}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.6}
+.wrap{max-width:960px;margin:0 auto;padding:32px 16px 64px;display:grid;gap:28px}
+h1{font-size:2.2rem;line-height:1.15;margin:0;font-weight:700;text-wrap:balance}
+.lead{margin:6px 0 0;color:var(--muted);max-width:60ch}
+input{font:inherit;color:inherit;width:100%;max-width:420px;padding:8px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+:focus-visible{outline:3px solid var(--nord9);outline-offset:2px}
+.groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px}
+.group{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--c);border-radius:6px;padding:16px 18px}
+.g0{--c:var(--nord15)}.g1{--c:var(--nord12)}.g2{--c:var(--nord14)}.g3{--c:var(--nord9)}
+h2{font-size:1.05rem;font-weight:600;margin:0 0 8px}
+ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+a:hover{text-decoration-thickness:2px}
+[hidden]{display:none!important}
+footer{font-size:.85rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+ <h1>EWR – Lernmaterial</h1>
+ <p class="lead">Interaktive Seiten zu Einführung in Wirtschaft und Recht: Vorsorge, Lohn und Steuern, Volkswirtschaft.</p>
+</header>
+<div><label for="q" class="lead" style="display:block;margin-bottom:4px">Seite suchen</label><input id="q" type="search" placeholder="z. B. AHV, Steuern, BIP" autocomplete="off"></div>
+<main class="groups" id="groups">
+<section class="group g0"><h2>Vorsorge und Alter</h2><ul><li><a href="Drei%20S%C3%A4ulen%20im%20Alter.html">Drei Säulen im Alter</a></li><li><a href="So%20entsteht%20die%20AHV-Rente.html">So entsteht die AHV-Rente</a></li><li><a href="Wer%20lebt%20l%C3%A4nger%2016%20oder%2075.html">Wer lebt länger: 16 oder 75?</a></li></ul></section>
+<section class="group g1"><h2>Lohn und Steuern</h2><ul><li><a href="Lohnabrechnung%20erkl%C3%A4rt.html">Lohnabrechnung erklärt</a></li><li><a href="Vom%20Lohn%20zum%20steuerbaren%20Einkommen.html">Vom Lohn zum steuerbaren Einkommen</a></li><li><a href="Steuertreppe%20Z%C3%BCrich.html">Steuertreppe Zürich</a></li></ul></section>
+<section class="group g2"><h2>Volkswirtschaft und Bevölkerung</h2><ul><li><a href="BIP%20Schweiz%201980%E2%80%932025.html">BIP Schweiz 1980–2025</a></li><li><a href="Erwerbsquote%20Schweiz%20im%20Vergleich.html">Erwerbsquote Schweiz im Vergleich</a></li><li><a href="Bev%C3%B6lkerung%20Schweiz.html">Bevölkerung Schweiz</a></li></ul></section>
+<section class="group g3" id="weitere" hidden><h2>Weitere Seiten</h2><ul id="weitere-list"></ul></section>
+</main>
+<p id="none" class="lead" hidden>Keine Seite passt zur Suche.</p>
+<footer>Kantonsschule Zürcher Unterland · P. Habegger</footer>
+</div>
+<script>
+const q=document.getElementById('q');
+function filter(){const t=q.value.trim().toLowerCase();let any=false;
+ document.querySelectorAll('.group').forEach(g=>{let n=0;g.querySelectorAll('li').forEach(li=>{const m=!t||li.textContent.toLowerCase().includes(t);li.hidden=!m;if(m)n++});g.hidden=n===0;if(n)any=true});
+ document.getElementById('none').hidden=any;}
+q.addEventListener('input',filter);
+// Neue Dateien automatisch ergänzen (GitHub-API); bei Fehler bleibt die feste Liste
+(async()=>{try{
+ const res=await fetch('https://api.github.com/repos/gehaltvoll/ewr/contents/');if(!res.ok)return;
+ const known=new Set([...document.querySelectorAll('.group a')].map(a=>decodeURIComponent(a.getAttribute('href'))));
+ const list=document.getElementById('weitere-list');let added=0;
+ for(const f of await res.json()){if(f.type!=='file'||!f.name.endsWith('.html')||f.name==='index.html'||known.has(f.name))continue;
+  const li=document.createElement('li'),a=document.createElement('a');a.href=encodeURIComponent(f.name);a.textContent=f.name.replace(/\.html$/,'');li.append(a);list.append(li);added++}
+ if(added){document.getElementById('weitere').hidden=false;filter()}
+}catch(e){}})();
+</script>
+</body>
+</html>
