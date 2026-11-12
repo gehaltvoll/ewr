@@ -1,0 +1,377 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!-- Entscheidungen:
+Einsatztyp: Lernmaterial EWR (Schüler:innen am eigenen Gerät) mit Beamer-Modus (grosse Schrift) für den Unterricht.
+Funktion: Rechner mit Beispiel. Bruttolohn, 13. Monatslohn, Alter, Situation, Kinder und die wichtigsten Abzüge einstellbar; die Treppe
+  Bruttolohn → Nettolohn → Reineinkommen → steuerbares Einkommen rechnet live. Jede Stufe anklickbar mit Erklärung (Was, Betrag, Rechnung, § StG ZH).
+  Zum Schluss Brücke zur Steuertreppe: geschätzte Staats- und Gemeindesteuer in Bülach (Tarif 2026, 209 %, Personalsteuer).
+Abzüge: Kanton Zürich, Steuerperiode 2026 (Kantonsblatt Februar 2026 via ESTV). Lohnabzüge mit denselben Beispielsätzen wie im Artefakt «Lohnabrechnung erklärt».
+Datenhaltung: nur Komfort (Variante in localStorage). Kein Export.
+Design: Nord-Farbschema, Open Sans + Google Sans Code (Beträge). Hell/Dunkel folgt System.
+Variante A «Klar»: sachlich, feine Linien, Frost-Abstufungen für die Abzugsgruppen. Variante B «Lebendig»: rundere Karten, grössere Titel, Aurora-Farben je Abzugsgruppe.
+-->
+<title>Vom Lohn zum steuerbaren Einkommen</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400;600&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: oben die zwei Begriffe im Vergleich, dann Eingaben, dann links die Abzugstreppe und rechts die Erklärung zur gewählten Stufe. */
+:root{
+  --nord0:#2E3440;--nord1:#3B4252;--nord2:#434C5E;--nord3:#4C566A;--nord4:#D8DEE9;--nord5:#E5E9F0;--nord6:#ECEFF4;
+  --nord7:#8FBCBB;--nord8:#88C0D0;--nord9:#81A1C1;--nord10:#5E81AC;--nord11:#BF616A;--nord12:#D08770;--nord13:#EBCB8B;--nord14:#A3BE8C;--nord15:#B48EAD;
+  --bg:var(--nord6);--surface:#fff;--surface-2:var(--nord5);--line:var(--nord4);--text:var(--nord0);--muted:var(--nord3);
+  --accent:var(--nord10);--accent-soft:var(--nord9);--sel:rgba(94,129,172,.12);
+  --g-sv:var(--nord10);--g-pay:var(--nord3);--g-beruf:var(--nord9);--g-allg:var(--nord8);--g-sozial:var(--nord7);--g-level:var(--nord4);--g-tax:var(--nord10);
+  --radius:4px;--radius-sm:3px;--card-border:1px solid var(--line);--card-shadow:none;--h-weight:600;--h2-size:1.2rem;--gap:24px;
+  --font:"Open Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"Google Sans Code",ui-monospace,"Cascadia Code",Consolas,"SF Mono",monospace;
+  --fs:17px;
+}
+:root[data-variant="b"]{
+  --g-sv:var(--nord10);--g-pay:var(--nord15);--g-beruf:var(--nord12);--g-allg:var(--nord13);--g-sozial:var(--nord14);--g-tax:var(--nord11);
+  --radius:16px;--radius-sm:10px;--card-border:1px solid transparent;--card-shadow:0 1px 2px rgba(46,52,64,.06),0 6px 18px rgba(46,52,64,.07);--h-weight:700;--h2-size:1.45rem;--gap:20px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--bg:var(--nord0);--surface:var(--nord1);--surface-2:var(--nord2);--line:var(--nord2);--text:var(--nord6);--muted:var(--nord4);--accent:var(--nord8);--sel:rgba(136,192,208,.14);--g-pay:var(--nord4);--g-level:var(--nord3);color-scheme:dark}
+  :root:not([data-theme="light"])[data-variant="b"]{--g-pay:var(--nord15);--card-shadow:none;--card-border:1px solid var(--nord2)}
+}
+:root[data-theme="dark"]{--bg:var(--nord0);--surface:var(--nord1);--surface-2:var(--nord2);--line:var(--nord2);--text:var(--nord6);--muted:var(--nord4);--accent:var(--nord8);--sel:rgba(136,192,208,.14);--g-pay:var(--nord4);--g-level:var(--nord3);color-scheme:dark}
+:root[data-theme="dark"][data-variant="b"]{--g-pay:var(--nord15);--card-shadow:none;--card-border:1px solid var(--nord2)}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:var(--fs);line-height:1.6;margin:0}
+.wrap{max-width:1200px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:var(--gap)}
+h1,h2,h3{text-wrap:balance;line-height:1.25;margin:0}
+h1{font-size:1.75rem;font-weight:700}
+h2{font-size:var(--h2-size);font-weight:var(--h-weight)}
+h3{font-size:1rem;font-weight:600}
+p{margin:0;max-width:70ch}
+.muted{color:var(--muted)}
+.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+a{color:var(--accent);text-decoration:underline}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
+
+.top{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end;justify-content:space-between}
+.lead{display:flex;flex-direction:column;gap:6px;min-width:0}
+.eyebrow{font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.tools{display:flex;flex-wrap:wrap;gap:8px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;padding:6px 12px;cursor:pointer;font-size:.9rem}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--bg);font-weight:600}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-sm);padding:6px 12px;cursor:pointer;font-size:.9rem}
+.btn:hover{border-color:var(--accent)}
+:root[data-variant="b"] .seg,:root[data-variant="b"] .btn{border-radius:999px}
+.card{background:var(--surface);border:var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow);padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+
+/* Begriffe */
+.terms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap)}
+@media (max-width:760px){.terms{grid-template-columns:minmax(0,1fr)}}
+.term{gap:8px}
+.term .big{font-family:var(--font-mono);font-size:1.7rem;font-weight:600;font-variant-numeric:tabular-nums}
+.term .tag{font-size:.8rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.term ul{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:2px;font-size:.95rem}
+.term.a{border-top:4px solid var(--g-pay)}
+.term.b{border-top:4px solid var(--g-tax)}
+:root[data-variant="b"] .term.a{border-top:0;background:color-mix(in srgb,var(--g-pay) 16%,var(--surface))}
+:root[data-variant="b"] .term.b{border-top:0;background:color-mix(in srgb,var(--g-tax) 13%,var(--surface))}
+
+/* Eingaben */
+.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px 18px;align-items:end}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-weight:600;font-size:.88rem}
+.inrow{display:flex;gap:6px;align-items:center}
+.inrow input,select{width:100%;min-width:0;padding:6px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg)}
+.inrow input{font-family:var(--font-mono)}
+.unit{color:var(--muted);font-size:.88rem;flex:none}
+.check{display:flex;gap:8px;align-items:center;font-weight:600;font-size:.88rem;padding-bottom:8px}
+.check input{width:1.1rem;height:1.1rem;accent-color:var(--accent)}
+.groupttl{font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;grid-column:1 / -1;margin-top:6px}
+.hint{font-size:.84rem;color:var(--muted)}
+
+/* Treppe */
+.main{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:var(--gap);align-items:start}
+@media (max-width:900px){.main{grid-template-columns:minmax(0,1fr)}}
+.explain{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+@media (max-width:900px){.explain{position:static}}
+.steps{display:flex;flex-direction:column;gap:2px}
+.st{display:grid;grid-template-columns:minmax(0,1fr) 7rem;grid-template-areas:"name amt" "bar bar";gap:2px 10px;padding:7px 10px;border:0;background:transparent;text-align:left;cursor:pointer;border-radius:var(--radius-sm);width:100%}
+.st:hover{background:var(--sel)}
+.st[aria-pressed="true"]{background:var(--sel);box-shadow:inset 3px 0 0 var(--accent)}
+:root[data-variant="b"] .st[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--accent)}
+.st .name{grid-area:name;min-width:0;font-size:.95rem}
+.st .name small{color:var(--muted);font-size:.8rem;margin-left:6px}
+.st .amt{grid-area:amt;text-align:right;font-family:var(--font-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.st .track{grid-area:bar;height:12px;position:relative;background:transparent}
+.st .lvl{position:absolute;left:0;top:0;bottom:0;background:var(--g-level);border-radius:2px}
+.st .cut{position:absolute;top:0;bottom:0;border-radius:2px;transition:left .3s ease,width .3s ease}
+.st.total{font-weight:700;border-top:2px solid var(--text);border-radius:0;margin-top:4px}
+.st.total .track{height:18px}
+.st.total .lvl{transition:width .3s ease}
+.st.zero{opacity:.55}
+.gcap{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:12px 10px 2px;display:flex;gap:8px;align-items:center}
+.gcap .sw{margin:0}
+.sw{display:inline-block;width:.8em;height:.8em;border-radius:2px;margin-right:6px;vertical-align:-1px}
+:root[data-variant="b"] .sw{border-radius:50%}
+
+/* Erklärung */
+.explain h2{display:flex;gap:10px;align-items:center}
+.facts{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 14px;font-size:.95rem;margin:0}
+.facts dt{color:var(--muted);font-weight:600}
+.facts dd{margin:0}
+.calcbox{font-family:var(--font-mono);font-size:.9rem;background:var(--surface-2);border-radius:var(--radius-sm);padding:10px 12px;overflow-x:auto;white-space:pre-wrap}
+.law{border:2px solid var(--nord10);border-radius:var(--radius-sm);padding:10px 14px;font-size:.93rem}
+.law .src{font-weight:700;color:var(--accent);display:block;margin-bottom:2px}
+.tip{border-left:4px solid var(--nord15);background:var(--surface-2);padding:8px 12px;border-radius:0 var(--radius-sm) var(--radius-sm) 0;font-size:.93rem}
+:root[data-variant="b"] .tip{border-left:0;border-radius:var(--radius-sm);background:color-mix(in srgb,var(--nord15) 18%,var(--surface))}
+
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+:root[data-variant="b"] .kpi{border:0;background:var(--surface-2)}
+.kpi .k{font-size:.8rem;color:var(--muted);font-weight:600}
+.kpi .v{font-family:var(--font-mono);font-size:1.3rem;font-weight:600;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:.82rem;color:var(--muted)}
+
+:root.beamer{--fs:22px}
+:root.beamer .wrap{max-width:1500px}
+:root.beamer .card{border-width:2px}
+.foot{font-size:.84rem;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+@media (prefers-reduced-motion: reduce){.st .cut,.st .lvl{transition:none}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="lead">
+      <span class="eyebrow">EWR · Steuern Kanton Zürich · Steuerperiode 2026</span>
+      <h1>Vom Lohn zum steuerbaren Einkommen</h1>
+      <p class="muted">Der Nettolohn ist nicht das, was versteuert wird. Die Treppe zeigt, welche Abzüge dazwischen liegen.</p>
+    </div>
+    <div class="tools">
+      <div class="seg" role="group" aria-label="Design-Variante">
+        <button type="button" id="va" aria-pressed="true">Variante A</button>
+        <button type="button" id="vb" aria-pressed="false">Variante B</button>
+      </div>
+      <button type="button" class="btn" id="beamerBtn" aria-pressed="false">Beamer-Modus</button>
+    </div>
+  </header>
+
+  <section class="terms" aria-label="Die zwei Begriffe">
+    <div class="card term a">
+      <span class="tag"><span class="sw" style="background:var(--g-pay)"></span>Arbeitsrecht · Lohnabrechnung</span>
+      <h2>Nettolohn</h2>
+      <span class="big" id="tNet"></span>
+      <ul>
+        <li>Was auf das Konto überwiesen wird.</li>
+        <li>Bruttolohn minus Sozialversicherungsbeiträge (AHV/IV/EO, ALV, NBU, Krankentaggeld, Pensionskasse).</li>
+        <li>Davon bezahlt man Miete, Krankenkasse und auch die Steuern.</li>
+      </ul>
+    </div>
+    <div class="card term b">
+      <span class="tag"><span class="sw" style="background:var(--g-tax)"></span>Steuerrecht · Steuererklärung</span>
+      <h2>Steuerbares Einkommen</h2>
+      <span class="big" id="tTax"></span>
+      <ul>
+        <li>Der Betrag, auf den der Steuertarif angewendet wird.</li>
+        <li>Nettolohn minus Berufskosten, allgemeine Abzüge und Sozialabzüge.</li>
+        <li>Wird jährlich in der Steuererklärung berechnet, nicht monatlich.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="card" aria-label="Eingaben">
+    <div class="inputs">
+      <div class="groupttl">Person und Lohn</div>
+      <div class="field"><label for="brutto">Bruttolohn pro Monat</label><div class="inrow"><span class="unit">Fr.</span><input type="number" id="brutto" min="0" step="50" inputmode="numeric"></div></div>
+      <label class="check" for="ml13"><input type="checkbox" id="ml13"> 13. Monatslohn</label>
+      <div class="field"><label for="alter">Alter</label><div class="inrow"><input type="number" id="alter" min="16" max="70" step="1" inputmode="numeric"><span class="unit">Jahre</span></div></div>
+      <div class="field"><label for="status">Situation</label><select id="status"><option value="single">alleinstehend</option><option value="married">verheiratet, ein Einkommen</option></select></div>
+      <div class="field"><label for="kinder">Kinder</label><div class="inrow"><input type="number" id="kinder" min="0" max="8" step="1" inputmode="numeric"></div></div>
+
+      <div class="groupttl">Abzüge in der Steuererklärung (Jahresbeträge)</div>
+      <div class="field"><label for="fahr">Fahrkosten (öV-Abo)</label><div class="inrow"><span class="unit">Fr.</span><input type="number" id="fahr" min="0" step="10" inputmode="numeric"></div></div>
+      <div class="field"><label for="verpf">Verpflegung auswärts</label><select id="verpf"><option value="3200">ja, ohne Kantine</option><option value="1600">ja, mit verbilligter Kantine</option><option value="0">nein, isst zu Hause</option></select></div>
+      <div class="field"><label for="wb">Weiterbildung</label><div class="inrow"><span class="unit">Fr.</span><input type="number" id="wb" min="0" step="100" inputmode="numeric"></div></div>
+      <div class="field"><label for="s3a">Einzahlung Säule 3a</label><div class="inrow"><span class="unit">Fr.</span><input type="number" id="s3a" min="0" step="100" inputmode="numeric"></div></div>
+      <div class="field"><label for="pk">Einkauf Pensionskasse</label><div class="inrow"><span class="unit">Fr.</span><input type="number" id="pk" min="0" step="100" inputmode="numeric"></div></div>
+      <div class="field"><label for="krank">Selbst bezahlte Krankheitskosten</label><div class="inrow"><span class="unit">Fr.</span><input type="number" id="krank" min="0" step="50" inputmode="numeric"></div></div>
+      <div class="field"><label for="spende">Spenden an Hilfswerke</label><div class="inrow"><span class="unit">Fr.</span><input type="number" id="spende" min="0" step="10" inputmode="numeric"></div></div>
+    </div>
+    <p class="hint">Beispiel voreingestellt: Lea, 30, ledig, Fr. 6'500 × 13, ZVV-Abo, isst auswärts, zahlt Fr. 3'000 in die Säule 3a.</p>
+  </section>
+
+  <div class="main">
+    <section class="card" aria-labelledby="hTreppe">
+      <h2 id="hTreppe">Die Abzugstreppe</h2>
+      <p class="hint">Der graue Balken zeigt, wie viel nach jeder Stufe übrig bleibt; das farbige Stück ist der Abzug. Klicken Sie auf eine Zeile.</p>
+      <div class="steps" id="steps"></div>
+    </section>
+    <aside class="card explain" id="explain" aria-live="polite"></aside>
+  </div>
+
+  <section class="card" aria-labelledby="hKpi">
+    <h2 id="hKpi">Und wie viel Steuern sind das?</h2>
+    <div class="kpis" id="kpis"></div>
+    <p class="hint">Geschätzte Staats- und Gemeindesteuer in Bülach: Tarif 2026, Steuerfuss 95 % + 96 % + 18 % = 209 %, Personalsteuer Fr. 24 pro Person, ohne Vermögen, Bundes- und Kirchensteuer. Die genaue Berechnung zeigt das Artefakt «Steuertreppe Zürich».</p>
+  </section>
+
+  <footer class="foot">
+    <span>Abzüge: Kanton Zürich, Steuerperiode 2026, gemäss Kantonsblatt Februar 2026, zusammengestellt von der <a href="https://www.estv2.admin.ch/stp/kb/zh-de.pdf" target="_blank" rel="noopener">ESTV</a>. Säule 3a: höchstens Fr. 7'258 (mit Pensionskasse). Verpflegungspauschale Fr. 3'200 bzw. Fr. 1'600 pro Jahr.</span>
+    <span>Lohnabzüge mit Beispielsätzen: AHV/IV/EO 5,3 %, ALV 1,1 %, NBU 1,2 %, Krankentaggeld 0,5 %, Pensionskasse BVG-Minimum (Altersgutschrift + 2 % Risiko, halbiert). Unverbindliche Lernhilfe; Paragraphen sinngemäss.</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+const $ = id => document.getElementById(id);
+const root = document.documentElement;
+const S = {brutto:6500, ml13:true, alter:30, status:"single", kinder:0, fahr:1000, verpf:3200, wb:0, s3a:3000, pk:0, krank:0, spende:0};
+const EG=[[7000,0],[5000,2],[4800,3],[8000,4],[9700,5],[11200,6],[13100,7],[17600,8],[34000,9],[33700,10],[53300,11],[69300,12],[null,13]];
+const EV=[[14100,0],[6400,2],[8100,3],[9800,4],[11200,5],[14500,6],[32200,7],[32400,8],[48500,9],[57900,10],[62900,11],[72600,12],[null,13]];
+
+const fmt=(n,d=0)=>{const neg=n<0;const s=(Math.round(Math.abs(n)*10**d)/10**d).toFixed(d);const [a,b]=s.split(".");return (neg?"−":"")+a.replace(/\B(?=(\d{3})+(?!\d))/g,"'")+(b?"."+b:"");};
+const pc=(n,d=1)=>fmt(n,d).replace(".",",")+" %";
+const r05=x=>Math.round(x*20)/20;
+const tarif=(x,t)=>{let s=0,r=x;for(const [w,p] of t){const part=w===null?r:Math.min(r,w);if(part<=0)break;s+=part*p/100;r-=part;}return s;};
+const ags=a=>a<25?0:a<35?7:a<45?10:a<55?15:18;
+
+function compute(){
+  const n=S.ml13?13:12, jahr=S.brutto*n;
+  const cap=Math.min(jahr,148200);
+  const ahv=jahr*0.053, alv=cap*0.011, nbu=cap*0.012, ktg=jahr*0.005;
+  const bvgIn=jahr>=22680&&S.alter>=17;
+  const koord=bvgIn?Math.min(Math.max(Math.min(jahr,90720)-26460,3780),64260):0;
+  const bvg=bvgIn?koord*(ags(S.alter)+2)/100/2:0;
+  const svAusweis=ahv+alv+nbu;                    // Lohnausweis Ziffer 9
+  const nettoAusweis=jahr-svAusweis-bvg;          // Ziffer 11
+  const auszahlung=nettoAusweis-ktg;              // was auf dem Konto ankommt
+  // Berufskosten § 26
+  const fahr=Math.min(S.fahr,5200);
+  const verpf=Number(S.verpf);
+  const uebrige=Math.min(Math.max(nettoAusweis*0.03,2000),4000);
+  const beruf=fahr+verpf+uebrige;
+  // allgemeine Abzüge § 31
+  const wb=Math.min(S.wb,12600);
+  const s3a=Math.min(S.s3a,7258);
+  const pk=S.pk;
+  const vers=(S.status==="married"?5800:2900)+1300*S.kinder;
+  const allg1=wb+s3a+pk+vers;
+  // § 32: Krankheitskosten und Spenden, bezogen auf Einkünfte minus §§ 26–31
+  const basis32=nettoAusweis-beruf-allg1;
+  const krank=Math.max(0,S.krank-0.05*Math.max(basis32,0));
+  const spende=S.spende>=100?Math.min(S.spende,0.2*Math.max(basis32,0)):0;
+  const rein=basis32-krank-spende;
+  // § 34 Sozialabzüge
+  const kind=9400*S.kinder;
+  const steuerbar=Math.max(0,rein-kind);
+  const einfach=tarif(steuerbar,S.status==="married"||S.kinder>0?EV:EG);
+  const personen=S.status==="married"?2:1;
+  const steuer=r05(einfach*2.09)+24*personen;
+  return {n,jahr,ahv,alv,nbu,ktg,koord,bvg,bvgIn,svAusweis,nettoAusweis,auszahlung,fahr,verpf,uebrige,beruf,wb,s3a,pk,vers,basis32,krank,spende,rein,kind,steuerbar,einfach,steuer,personen};
+}
+
+/* Stufen: [key, label, kurz, gruppe, betrag (positiv = Abzug), typ] */
+const G={sv:["--g-sv","Lohnabzüge (stehen auf dem Lohnausweis)"],beruf:["--g-beruf","Berufskosten, § 26 StG"],allg:["--g-allg","Allgemeine Abzüge, §§ 31–32 StG"],sozial:["--g-sozial","Sozialabzüge, § 34 StG"]};
+const INFO={
+  brutto:{t:"Bruttolohn",what:"Der vertraglich vereinbarte Jahreslohn vor allen Abzügen (Lohnausweis Ziffer 1 und 8).",law:["Art. 322 OR","Der Arbeitgeber schuldet den vereinbarten oder üblichen Lohn."],
+    calc:c=>`${fmt(S.brutto)} × ${c.n} Monatslöhne = Fr. ${fmt(c.jahr)}`,tip:"Für die Steuern zählt immer der Jahreslohn, auch Boni, Spesenpauschalen und Naturallohn (z. B. Geschäftsauto)."},
+  sv:{t:"AHV/IV/EO, ALV, NBU",what:"Die Beiträge an die obligatorischen Sozialversicherungen. Sie stehen auf dem Lohnausweis (Ziffer 9) und sind schon abgezogen, wenn man die Steuererklärung ausfüllt.",law:["§ 31 Abs. 1 StG ZH","Beiträge an AHV, IV, EO, ALV und die obligatorische Unfallversicherung sind abziehbar."],
+    calc:c=>`AHV/IV/EO 5,3 %: ${fmt(c.ahv)}\nALV 1,1 %: ${fmt(c.alv)}\nNBU 1,2 %: ${fmt(c.nbu)}\nTotal Ziffer 9: Fr. ${fmt(c.svAusweis)}`,tip:"Was heute in die Sozialversicherungen fliesst, wird nicht besteuert. Die späteren Renten sind dafür voll steuerbar."},
+  bvg:{t:"Pensionskasse (ordentliche Beiträge)",what:"Die laufenden Beiträge an die 2. Säule. Lohnausweis Ziffer 10.1.",law:["§ 31 Abs. 1 StG ZH","Ordentliche Beiträge an Einrichtungen der beruflichen Vorsorge sind abziehbar."],
+    calc:c=>c.bvgIn?`Koordinierter Lohn ${fmt(c.koord)} × (${ags(S.alter)} % + 2 %) ÷ 2 = Fr. ${fmt(c.bvg)}`:`Jahreslohn unter Fr. 22'680 oder Alter unter 17: kein BVG-Beitrag.`,tip:"Die Pensionskassenbeiträge sind heute steuerfrei; die spätere Rente oder der Kapitalbezug wird dafür besteuert."},
+  netto:{t:"Nettolohn gemäss Lohnausweis",what:"Ziffer 11 des Lohnausweises. Mit diesem Betrag beginnt die Steuererklärung. Er ist leicht höher als die Auszahlung, weil das Krankentaggeld nicht auf dem Lohnausweis abgezogen wird.",law:["§ 17 StG ZH","Steuerbar sind alle Einkünfte aus unselbständiger Erwerbstätigkeit."],
+    calc:c=>`${fmt(c.jahr)} − ${fmt(c.svAusweis)} − ${fmt(c.bvg)} = Fr. ${fmt(c.nettoAusweis)}\nAusbezahlt (nach Krankentaggeld ${fmt(c.ktg)}): Fr. ${fmt(c.auszahlung)} pro Jahr, Fr. ${fmt(c.auszahlung/c.n,2)} pro Monat`,tip:"Merke: Nettolohn = was man bekommt. Steuerbares Einkommen = worauf man Steuern bezahlt."},
+  fahr:{t:"Fahrkosten",what:"Kosten für den Arbeitsweg mit öffentlichen Verkehrsmitteln (Abo). Das Auto ist nur ausnahmsweise abziehbar.",law:["§ 26 Abs. 1 lit. a StG ZH","Notwendige Kosten für Fahrten zwischen Wohn- und Arbeitsstätte, höchstens Fr. 5'200."],
+    calc:c=>`Eingabe ${fmt(S.fahr)}, Höchstbetrag 5'200\nAbzug: Fr. ${fmt(c.fahr)}`,tip:"Mit dem Velo gibt es eine Pauschale von Fr. 700."},
+  verpf:{t:"Verpflegung",what:"Mehrkosten, wenn man über Mittag nicht nach Hause kann. Pauschale, keine Belege nötig.",law:["§ 26 Abs. 1 lit. b StG ZH","Notwendige Mehrkosten für Verpflegung ausserhalb der Wohnstätte."],
+    calc:c=>`Pauschale: Fr. ${fmt(c.verpf)}${c.verpf===1600?" (mit verbilligter Kantine halbiert)":c.verpf===0?" (isst zu Hause)":""}`,tip:"Die Pauschale beträgt Fr. 15 pro Arbeitstag, höchstens Fr. 3'200 im Jahr."},
+  uebrige:{t:"Übrige Berufsauslagen",what:"Pauschale für Arbeitskleider, Werkzeug, Fachliteratur, Computer usw.",law:["§ 26 StG ZH, Weisung VPBU Ziff. I/3","Pauschal 3 % des Nettolohns, mindestens Fr. 2'000, höchstens Fr. 4'000."],
+    calc:c=>`3 % × ${fmt(c.nettoAusweis)} = ${fmt(c.nettoAusweis*0.03)}\nbegrenzt auf 2'000 bis 4'000: Fr. ${fmt(c.uebrige)}`,tip:"Wer höhere Kosten hat, kann die effektiven Kosten mit Belegen geltend machen."},
+  wb:{t:"Weiterbildung",what:"Kosten für berufsorientierte Aus- und Weiterbildung (Kurse, Lehrgänge), wenn man die Sekundarstufe II abgeschlossen hat oder mindestens 20 ist.",law:["§ 31 Abs. 1 lit. k StG ZH","Berufsorientierte Aus- und Weiterbildungskosten bis Fr. 12'600."],
+    calc:c=>`Eingabe ${fmt(S.wb)}, Höchstbetrag 12'600\nAbzug: Fr. ${fmt(c.wb)}`,tip:"Ein Hobbykurs zählt nicht; er muss einen Bezug zum Beruf haben."},
+  s3a:{t:"Säule 3a",what:"Einzahlungen in die gebundene Selbstvorsorge (3. Säule). Das Geld ist bis kurz vor der Pensionierung gebunden.",law:["§ 31 Abs. 1 StG ZH","Beiträge an anerkannte Formen der gebundenen Selbstvorsorge, mit Pensionskasse höchstens Fr. 7'258."],
+    calc:c=>`Eingabe ${fmt(S.s3a)}, Höchstbetrag 7'258\nAbzug: Fr. ${fmt(c.s3a)}`,tip:"Der wichtigste Abzug, den man selbst steuern kann. Die Steuerersparnis entspricht etwa dem Grenzsteuersatz."},
+  pk:{t:"Einkauf Pensionskasse",what:"Freiwillige Einzahlungen, um Lücken in der Pensionskasse zu schliessen, z. B. nach einer Lohnerhöhung oder Teilzeit.",law:["§ 31 Abs. 1 StG ZH","Einkäufe in die berufliche Vorsorge sind abziehbar, soweit eine Lücke besteht."],
+    calc:c=>`Abzug: Fr. ${fmt(c.pk)}`,tip:"Wer sich einkauft, darf das Geld drei Jahre lang nicht als Kapital beziehen."},
+  vers:{t:"Versicherungsprämien und Sparzinsen",what:"Pauschalabzug für Krankenkassenprämien, Lebens- und Unfallversicherungen sowie Zinsen auf Sparkonten.",law:["§ 31 Abs. 1 lit. g StG ZH","Alleinstehende Fr. 2'900, Verheiratete Fr. 5'800, plus Fr. 1'300 je Kind."],
+    calc:c=>`${S.status==="married"?"5'800":"2'900"}${S.kinder?` + ${S.kinder} × 1'300`:""} = Fr. ${fmt(c.vers)}`,tip:"Die Krankenkassenprämie ist meist viel höher als dieser Abzug; abziehbar ist trotzdem nur der Pauschalbetrag."},
+  krank:{t:"Krankheitskosten",what:"Selbst bezahlte Arzt-, Zahnarzt- und Medikamentenkosten (Franchise, Selbstbehalt), aber nur der Teil über einem Selbstbehalt.",law:["§ 32 lit. a StG ZH","Abziehbar, soweit die Kosten 5 % der Einkünfte nach den Abzügen §§ 26–31 übersteigen."],
+    calc:c=>`Selbstbehalt 5 % × ${fmt(c.basis32)} = ${fmt(0.05*c.basis32)}\nEingabe ${fmt(S.krank)} → Abzug: Fr. ${fmt(c.krank)}`,tip:"Wegen des Selbstbehalts lohnt sich dieser Abzug nur bei hohen Kosten, z. B. für eine Zahnbehandlung."},
+  spende:{t:"Spenden",what:"Freiwillige Zuwendungen an gemeinnützige Organisationen mit Sitz in der Schweiz.",law:["§ 32 lit. b StG ZH","Mindestens Fr. 100 im Jahr, höchstens 20 % der Einkünfte nach den Abzügen §§ 26–31."],
+    calc:c=>`Eingabe ${fmt(S.spende)}${S.spende>0&&S.spende<100?" (unter Fr. 100: kein Abzug)":""}\nAbzug: Fr. ${fmt(c.spende)}`,tip:"Spenden an Privatpersonen oder Vereine ohne Steuerbefreiung sind nicht abziehbar."},
+  rein:{t:"Reineinkommen",what:"Einkommen nach Berufskosten und allgemeinen Abzügen. Davon werden nur noch die Sozialabzüge abgezogen.",law:["§§ 25–33 StG ZH","Zum Reineinkommen gelangt man durch Abzug der Gewinnungskosten und allgemeinen Abzüge von den gesamten Einkünften."],
+    calc:c=>`${fmt(c.nettoAusweis)} − Berufskosten ${fmt(c.beruf)} − allgemeine Abzüge ${fmt(c.allg)} = Fr. ${fmt(c.rein)}`,tip:"Das Reineinkommen ist auch massgebend für die Prämienverbilligung."},
+  kind:{t:"Kinderabzug",what:"Sozialabzug für jedes minderjährige oder in Ausbildung stehende Kind, für dessen Unterhalt man sorgt.",law:["§ 34 Abs. 1 lit. a StG ZH","Fr. 9'400 je Kind."],
+    calc:c=>`${S.kinder} × 9'400 = Fr. ${fmt(c.kind)}`,tip:"Mit Kindern gilt ausserdem der tiefere Verheiratetentarif, auch für Alleinerziehende."},
+  steuerbar:{t:"Steuerbares Einkommen",what:"Auf diesen Betrag wird der Steuertarif angewendet. Er ist deutlich tiefer als der Nettolohn.",law:["§ 35 StG ZH","Die Einkommenssteuer wird nach dem Tarif auf dem steuerbaren Einkommen berechnet."],
+    calc:c=>`${fmt(c.rein)} − Sozialabzüge ${fmt(c.kind)} = Fr. ${fmt(c.steuerbar)}\nDifferenz zum Nettolohn (Lohnausweis): Fr. ${fmt(c.nettoAusweis-c.steuerbar)} (${pc((c.nettoAusweis-c.steuerbar)/c.nettoAusweis*100)})`,tip:"Jeder zusätzliche Abzug von Fr. 1'000 spart ungefähr Fr. 1'000 × Grenzsteuersatz an Steuern."}
+};
+
+let sel="steuerbar";
+function render(){
+  const c=compute();
+  c.allg=c.wb+c.s3a+c.pk+c.vers+c.krank+c.spende;
+  const max=c.jahr||1;
+  const rows=[];
+  let lvl=c.jahr;
+  const total=(k,name,v)=>{rows.push({k,name,v,total:true,lvl:v});};
+  const cut=(k,name,v,g)=>{rows.push({k,name,v,g,from:lvl-v,to:lvl});lvl-=v;};
+  total("brutto","Bruttolohn (Jahr)",c.jahr);
+  rows.push({cap:"sv"});
+  cut("sv","AHV/IV/EO, ALV, NBU",c.svAusweis,"sv");
+  cut("bvg","Pensionskasse",c.bvg,"sv");
+  total("netto","Nettolohn (Lohnausweis Ziffer 11)",c.nettoAusweis);
+  rows.push({cap:"beruf"});
+  cut("fahr","Fahrkosten",c.fahr,"beruf");
+  cut("verpf","Verpflegung",c.verpf,"beruf");
+  cut("uebrige","Übrige Berufsauslagen",c.uebrige,"beruf");
+  rows.push({cap:"allg"});
+  cut("wb","Weiterbildung",c.wb,"allg");
+  cut("s3a","Säule 3a",c.s3a,"allg");
+  cut("pk","Einkauf Pensionskasse",c.pk,"allg");
+  cut("vers","Versicherungsprämien, Sparzinsen",c.vers,"allg");
+  cut("krank","Krankheitskosten",c.krank,"allg");
+  cut("spende","Spenden",c.spende,"allg");
+  total("rein","Reineinkommen",c.rein);
+  rows.push({cap:"sozial"});
+  cut("kind","Kinderabzug",c.kind,"sozial");
+  total("steuerbar","Steuerbares Einkommen",c.steuerbar);
+
+  $("steps").innerHTML=rows.map(r=>{
+    if(r.cap) return `<div class="gcap"><span class="sw" style="background:var(${G[r.cap][0]})"></span>${G[r.cap][1]}</div>`;
+    if(r.total) return `<button type="button" class="st total" data-k="${r.k}" aria-pressed="${sel===r.k}"><span class="name">${r.name}</span><span class="amt">${fmt(r.v)}</span><span class="track"><span class="lvl" style="width:${Math.max(0,r.v)/max*100}%;${r.k==="steuerbar"?"background:var(--g-tax)":r.k==="netto"?"background:var(--g-pay)":""}"></span></span></button>`;
+    return `<button type="button" class="st ${r.v<=0?"zero":""}" data-k="${r.k}" aria-pressed="${sel===r.k}"><span class="name">${r.name}</span><span class="amt">${r.v>0?"− "+fmt(r.v):"0"}</span><span class="track"><span class="lvl" style="width:${Math.max(0,r.from)/max*100}%"></span><span class="cut" style="left:${Math.max(0,r.from)/max*100}%;width:${Math.max(0,r.v)/max*100}%;background:var(${G[r.g][0]})"></span></span></button>`;
+  }).join("");
+  $("steps").querySelectorAll(".st").forEach(b=>b.addEventListener("click",()=>{sel=b.dataset.k;render();}));
+
+  const d=INFO[sel];
+  const grp=rows.find(r=>r.k===sel&&r.g);
+  const col=grp?G[grp.g][0]:(sel==="steuerbar"?"--g-tax":sel==="netto"?"--g-pay":"--g-level");
+  $("explain").innerHTML=`<h2><span class="sw" style="background:var(${col});width:14px;height:14px"></span>${d.t}</h2><p>${d.what}</p><div class="calcbox">${d.calc(c)}</div><div class="law"><span class="src">${d.law[0]} <span class="muted" style="font-weight:400">(sinngemäss)</span></span>${d.law[1]}</div><div class="tip">${d.tip}</div>`;
+
+  $("tNet").textContent=`Fr. ${fmt(c.auszahlung)} pro Jahr`;
+  $("tTax").textContent=`Fr. ${fmt(c.steuerbar)} pro Jahr`;
+  $("kpis").innerHTML=
+    `<div class="kpi"><span class="k">Nettolohn ausbezahlt</span><span class="v">${fmt(c.auszahlung)}</span><span class="s">pro Jahr</span></div>`+
+    `<div class="kpi"><span class="k">Steuerbares Einkommen</span><span class="v">${fmt(c.steuerbar)}</span><span class="s">${pc(c.steuerbar/c.auszahlung*100)} des Nettolohns</span></div>`+
+    `<div class="kpi"><span class="k">Steuern Kanton + Bülach</span><span class="v">${fmt(c.steuer,2)}</span><span class="s">pro Monat ca. ${fmt(c.steuer/12)}</span></div>`+
+    `<div class="kpi"><span class="k">Anteil am Nettolohn</span><span class="v">${pc(c.steuer/c.auszahlung*100)}</span><span class="s">so viel monatlich zurücklegen</span></div>`;
+}
+
+const ids=["brutto","alter","kinder","fahr","wb","s3a","pk","krank","spende"];
+function sync(){ for(const k of ids) $(k).value=S[k]; $("ml13").checked=S.ml13; $("status").value=S.status; $("verpf").value=String(S.verpf); }
+const nv=(v,min,max)=>{const n=Number(v);return isFinite(n)?Math.min(max,Math.max(min,n)):min;};
+for(const k of ids) $(k).addEventListener("input",e=>{S[k]=nv(e.target.value,0,k==="alter"?80:k==="kinder"?8:1e7);render();});
+$("ml13").addEventListener("change",e=>{S.ml13=e.target.checked;render();});
+$("status").addEventListener("change",e=>{S.status=e.target.value;render();});
+$("verpf").addEventListener("change",e=>{S.verpf=Number(e.target.value);render();});
+
+function setVariant(v){root.dataset.variant=v;$("va").setAttribute("aria-pressed",v==="a");$("vb").setAttribute("aria-pressed",v==="b");try{localStorage.setItem("steuerbar-variant",v);}catch(e){}}
+$("va").addEventListener("click",()=>setVariant("a"));$("vb").addEventListener("click",()=>setVariant("b"));
+let saved="a";try{saved=localStorage.getItem("steuerbar-variant")||"a";}catch(e){}
+setVariant(saved==="b"?"b":"a");
+$("beamerBtn").addEventListener("click",()=>{const on=!root.classList.contains("beamer");root.classList.toggle("beamer",on);$("beamerBtn").setAttribute("aria-pressed",on);$("beamerBtn").textContent=on?"Beamer-Modus beenden":"Beamer-Modus";});
+
+sync();render();
+})();
+</script>
+
+</body></html>

@@ -1,0 +1,498 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!-- Entscheidungen:
+Einsatztyp: Lernmaterial EWR (Schüler:innen am eigenen Gerät) mit Beamer-Modus für die Demo im Unterricht.
+Funktion: freie Eingabe von steuerbarem Einkommen und Vermögen (Regler + Feld), Tarifwahl, Schnellauswahl der Arbeitsblatt-Beispiele (Lea, Nico, Familie Meier);
+  alle Schritte und Grafiken rechnen live. Steuerfuss: Bülach voreingestellt (Stadt 96 %, Sekundarschule 18 %), Gemeindesteuerfuss frei einstellbar, Kanton 95 % anpassbar.
+Inhalt: Tarife Kanton Zürich ab Steuerperiode 2026 (§ 35, § 47 StG), Personalsteuer Fr. 24, Rundung auf 5 Rappen. Ohne Bundes- und Kirchensteuer.
+Datenhaltung: nur Komfort (gewählte Variante in localStorage). Kein Export.
+Design: Nord-Farbschema, Open Sans + Google Sans Code (Zahlen). Hell/Dunkel folgt System.
+Variante A «Klar»: sachlich, feine Linien, Frost als einziger Akzent. Variante B «Lebendig»: rundere Karten, grössere Titel, Aurora-Farben für die Steuerempfänger.
+-->
+<title>Steuertreppe Zürich</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400;600&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: links die Eingaben (auf breiten Bildschirmen mitlaufend), rechts die vier Rechenschritte untereinander. */
+:root{
+  --nord0:#2E3440;--nord1:#3B4252;--nord2:#434C5E;--nord3:#4C566A;--nord4:#D8DEE9;--nord5:#E5E9F0;--nord6:#ECEFF4;
+  --nord7:#8FBCBB;--nord8:#88C0D0;--nord9:#81A1C1;--nord10:#5E81AC;--nord11:#BF616A;--nord12:#D08770;--nord13:#EBCB8B;--nord14:#A3BE8C;--nord15:#B48EAD;
+  --bg:var(--nord6);--surface:#fff;--surface-2:var(--nord5);--line:var(--nord4);--text:var(--nord0);--muted:var(--nord3);
+  --accent:var(--nord10);--accent-soft:var(--nord9);
+  --c-kt:var(--nord10);--c-st:var(--nord8);--c-sek:var(--nord7);--c-ps:var(--nord3);--c-stage:var(--nord10);--c-wealth:var(--nord9);
+  --c-avg:var(--nord10);--c-marg:var(--nord3);
+  --radius:4px;--radius-sm:3px;--card-border:1px solid var(--line);--card-shadow:none;--h-weight:600;--h2-size:1.25rem;--gap:28px;--chip-bg:transparent;
+  --font:"Open Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"Google Sans Code",ui-monospace,"Cascadia Code",Consolas,"SF Mono",monospace;
+  --fs:17px;
+}
+:root[data-variant="b"]{
+  --surface:#fff;--c-kt:var(--nord10);--c-st:var(--nord14);--c-sek:var(--nord13);--c-ps:var(--nord15);--c-stage:var(--nord12);--c-wealth:var(--nord15);
+  --c-avg:var(--nord12);--c-marg:var(--nord10);
+  --radius:16px;--radius-sm:10px;--card-border:1px solid transparent;--card-shadow:0 1px 2px rgba(46,52,64,.06),0 6px 18px rgba(46,52,64,.07);--h-weight:700;--h2-size:1.5rem;--gap:22px;--chip-bg:var(--surface-2);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--bg:var(--nord0);--surface:var(--nord1);--surface-2:var(--nord2);--line:var(--nord2);--text:var(--nord6);--muted:var(--nord4);--accent:var(--nord8);--c-ps:var(--nord4);--c-marg:var(--nord4);color-scheme:dark}
+  :root:not([data-theme="light"])[data-variant="b"]{--surface:var(--nord1);--c-ps:var(--nord15);--c-marg:var(--nord8);--card-shadow:none;--card-border:1px solid var(--nord2)}
+}
+:root[data-theme="dark"]{--bg:var(--nord0);--surface:var(--nord1);--surface-2:var(--nord2);--line:var(--nord2);--text:var(--nord6);--muted:var(--nord4);--accent:var(--nord8);--c-ps:var(--nord4);--c-marg:var(--nord4);color-scheme:dark}
+:root[data-theme="dark"][data-variant="b"]{--surface:var(--nord1);--c-ps:var(--nord15);--c-marg:var(--nord8);--card-shadow:none;--card-border:1px solid var(--nord2)}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:var(--fs);line-height:1.6;margin:0}
+.wrap{max-width:1240px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{text-wrap:balance;line-height:1.25;margin:0}
+h1{font-size:1.75rem;font-weight:700}
+h2{font-size:var(--h2-size);font-weight:var(--h-weight)}
+h3{font-size:1rem;font-weight:600}
+p{margin:0;max-width:70ch}
+.muted{color:var(--muted)}
+.num,code,.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+a{color:var(--accent);text-decoration:underline}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
+
+/* Kopf */
+.top{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end;justify-content:space-between;margin-bottom:20px}
+.top .lead{display:flex;flex-direction:column;gap:6px;min-width:0}
+.eyebrow{font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.tools{display:flex;flex-wrap:wrap;gap:8px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;padding:6px 12px;cursor:pointer;font-size:.9rem}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--bg);font-weight:600}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-sm);padding:6px 12px;cursor:pointer;font-size:.9rem}
+.btn:hover{border-color:var(--accent)}
+:root[data-variant="b"] .seg,:root[data-variant="b"] .btn{border-radius:999px}
+
+/* Raster */
+.grid{display:grid;grid-template-columns:minmax(0,330px) minmax(0,1fr);gap:var(--gap);align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+@media (max-width:900px){.panel{position:static}}
+.card{background:var(--surface);border:var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow);padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.steps{display:flex;flex-direction:column;gap:var(--gap);min-width:0}
+
+/* Schrittkopf */
+.stephead{display:flex;gap:12px;align-items:baseline}
+.stepno{font-family:var(--font-mono);font-weight:600;color:var(--accent);font-size:.95rem;flex:none}
+:root[data-variant="b"] .stepno{display:inline-grid;place-items:center;width:2rem;height:2rem;border-radius:50%;background:var(--accent);color:var(--bg);font-size:1rem;align-self:center}
+
+/* Eingaben */
+.field{display:flex;flex-direction:column;gap:6px}
+.field label,.legend{font-weight:600;font-size:.92rem}
+.inrow{display:flex;gap:8px;align-items:center}
+.inrow input[type=number]{width:100%;min-width:0;padding:6px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg);font-family:var(--font-mono)}
+.unit{color:var(--muted);font-size:.9rem;flex:none}
+input[type=range]{width:100%;accent-color:var(--accent)}
+select{width:100%;padding:6px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--chip-bg);border-radius:var(--radius-sm);padding:4px 10px;cursor:pointer;font-size:.88rem}
+:root[data-variant="b"] .chip{border-radius:999px}
+.chip:hover{border-color:var(--accent)}
+.hint{font-size:.85rem;color:var(--muted)}
+hr{border:0;border-top:1px solid var(--line);margin:0}
+
+/* Tabellen */
+.tablebox{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:.82rem;text-transform:uppercase;letter-spacing:.04em}
+td.r,th.r{text-align:right}
+tr.total td{font-weight:600;border-bottom:0;border-top:2px solid var(--text)}
+.sw{display:inline-block;width:.8em;height:.8em;border-radius:2px;margin-right:6px;vertical-align:-1px}
+
+/* Diagramme */
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font-family:var(--font);font-size:12px}
+.chart .lbl{fill:var(--text);font-weight:600}
+.chart .grid line{stroke:var(--line)}
+.legendrow{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.88rem;color:var(--muted)}
+
+/* Multiplikation */
+.mult{display:flex;flex-direction:column;gap:10px}
+.mrow{display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr) 8.5rem;gap:6px 12px;align-items:center}
+@media (max-width:560px){.mrow{grid-template-columns:minmax(0,1fr) auto}.mrow .bar{grid-column:1 / -1;order:3}}
+.mrow .name{font-size:.92rem}
+.mrow .val{font-family:var(--font-mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.bar{height:22px;background:var(--surface-2);border-radius:var(--radius-sm);position:relative;overflow:hidden}
+.bar span{position:absolute;inset:0 auto 0 0;border-radius:var(--radius-sm);transition:width .35s ease}
+.calc{font-family:var(--font-mono);font-size:.85rem;color:var(--muted)}
+.stack{display:flex;height:34px;border-radius:var(--radius-sm);overflow:hidden;background:var(--surface-2)}
+.stack span{height:100%;transition:width .35s ease}
+
+/* Kennzahlen */
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:560px){.kpis{grid-template-columns:minmax(0,1fr)}}
+.kpi{border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+:root[data-variant="b"] .kpi{border:0;background:var(--surface-2)}
+.kpi .k{font-size:.82rem;color:var(--muted);font-weight:600}
+.kpi .v{font-family:var(--font-mono);font-size:1.45rem;font-weight:600;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:.85rem;color:var(--muted)}
+.merke{border-left:4px solid var(--nord15);padding:8px 14px;background:var(--surface-2);border-radius:0 var(--radius-sm) var(--radius-sm) 0}
+:root[data-variant="b"] .merke{border-left:0;border-radius:var(--radius-sm);background:color-mix(in srgb,var(--nord15) 18%,var(--surface))}
+.merke b{display:block;margin-bottom:2px}
+.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:700px){.pair{grid-template-columns:minmax(0,1fr)}}
+
+/* Beamer */
+.beamerbar{display:none}
+.summary{display:none}
+:root.beamer{--fs:23px}
+:root.beamer .wrap{max-width:1400px}
+:root.beamer .grid{grid-template-columns:minmax(0,1fr)}
+:root.beamer .panel{position:static}
+:root.beamer [data-step]{display:none}
+:root.beamer [data-step].show{display:flex}
+:root.beamer .summary{display:block;font-size:.9rem;color:var(--muted)}
+:root.beamer .summary.hidden-on-1{display:none}
+:root.beamer .beamerbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
+:root.beamer .chart text{font-size:15px}
+:root.beamer .card{border-width:2px}
+.dots{display:flex;gap:8px}
+.dots button{width:2.2rem;height:2.2rem;border-radius:50%;border:2px solid var(--line);background:var(--surface);cursor:pointer;font-family:var(--font-mono);font-weight:600}
+.dots button[aria-current="step"]{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+@media (prefers-reduced-motion: reduce){.bar span,.stack span{transition:none}}
+.foot{margin-top:28px;font-size:.85rem;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="lead">
+      <span class="eyebrow">EWR · Kanton Zürich · Steuerperiode 2026</span>
+      <h1>Steuertreppe Zürich</h1>
+      <p class="muted">Vom steuerbaren Einkommen und Vermögen zur Staats- und Gemeindesteuer, in vier Schritten.</p>
+    </div>
+    <div class="tools">
+      <div class="seg" role="group" aria-label="Design-Variante">
+        <button type="button" id="va" aria-pressed="true">Variante A</button>
+        <button type="button" id="vb" aria-pressed="false">Variante B</button>
+      </div>
+      <button type="button" class="btn" id="beamerBtn" aria-pressed="false">Beamer-Modus</button>
+    </div>
+  </header>
+
+  <div class="beamerbar">
+    <div class="dots" role="group" aria-label="Schritte">
+      <button type="button" data-go="1">1</button><button type="button" data-go="2">2</button><button type="button" data-go="3">3</button><button type="button" data-go="4">4</button>
+    </div>
+    <div class="tools">
+      <button type="button" class="btn" id="prevBtn">← Zurück</button>
+      <button type="button" class="btn" id="nextBtn">Weiter →</button>
+      <button type="button" class="btn" id="fsBtn">Vollbild</button>
+    </div>
+  </div>
+  <p class="summary" id="summary"></p>
+
+  <div class="grid">
+    <aside class="panel card" data-step="1" aria-labelledby="h1s">
+      <div class="stephead"><span class="stepno">1</span><h2 id="h1s">Ausgangslage</h2></div>
+      <p class="hint">Steuerbares Einkommen und Vermögen: alle Abzüge sind bereits abgezogen.</p>
+      <div class="field">
+        <span class="legend">Beispiele aus dem Arbeitsblatt</span>
+        <div class="chips">
+          <button type="button" class="chip" data-ex="lea">Lea</button>
+          <button type="button" class="chip" data-ex="nico">Nico</button>
+          <button type="button" class="chip" data-ex="meier">Familie Meier</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="status">Situation</label>
+        <select id="status">
+          <option value="single">Alleinstehend (Grundtarif)</option>
+          <option value="married">Verheiratet (Verheiratetentarif)</option>
+          <option value="parent">Alleinerziehend (Verheiratetentarif)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="eNum">Steuerbares Einkommen</label>
+        <div class="inrow"><span class="unit">Fr.</span><input type="number" id="eNum" min="0" step="100" inputmode="numeric"></div>
+        <input type="range" id="eRange" min="0" max="400000" step="100" aria-label="Steuerbares Einkommen, Regler">
+      </div>
+      <div class="field">
+        <label for="vNum">Steuerbares Vermögen</label>
+        <div class="inrow"><span class="unit">Fr.</span><input type="number" id="vNum" min="0" step="1000" inputmode="numeric"></div>
+        <input type="range" id="vRange" min="0" max="3000000" step="1000" aria-label="Steuerbares Vermögen, Regler">
+      </div>
+      <hr>
+      <div class="field">
+        <label for="gmode">Wohngemeinde</label>
+        <select id="gmode">
+          <option value="buelach">Bülach (Stadt 96 % + Sekundarschule 18 %)</option>
+          <option value="custom">Eigener Gemeindesteuerfuss</option>
+        </select>
+      </div>
+      <div class="field" id="gcustomField" hidden>
+        <label for="gNum">Gemeindesteuerfuss inkl. Schule</label>
+        <div class="inrow"><input type="number" id="gNum" min="0" max="200" step="1"><span class="unit">%</span></div>
+        <input type="range" id="gRange" min="60" max="140" step="1" aria-label="Gemeindesteuerfuss, Regler">
+      </div>
+      <div class="field">
+        <label for="ktNum">Steuerfuss Kanton Zürich</label>
+        <div class="inrow"><input type="number" id="ktNum" min="0" max="200" step="1"><span class="unit">%</span></div>
+      </div>
+      <p class="hint">Ohne direkte Bundessteuer und Kirchensteuer.</p>
+    </aside>
+
+    <main class="steps">
+      <section class="card" data-step="2" aria-labelledby="h2s">
+        <div class="stephead"><span class="stepno">2</span><h2 id="h2s">Einfache Staatssteuer nach Tarif</h2></div>
+        <p>Der Tarif ist eine Treppe: Jeder Teil des Einkommens wird mit dem Satz seiner Stufe besteuert. Die Steuer entspricht der farbigen Fläche unter der Treppe.</p>
+        <div>
+          <h3 id="eTitle">Einkommen</h3>
+          <svg class="chart" id="eChart" viewBox="0 0 680 270" role="img" aria-labelledby="eTitle"></svg>
+          <div class="legendrow"><span><span class="sw" style="background:var(--c-stage)"></span>besteuerter Teil, Stufe für Stufe</span><span><span class="sw" style="background:var(--surface-2);outline:1px solid var(--line)"></span>Stufen darüber</span></div>
+        </div>
+        <details>
+          <summary>Rechenweg Einkommen Stufe für Stufe</summary>
+          <div class="tablebox"><table id="eTable"></table></div>
+        </details>
+        <div>
+          <h3 id="vTitle">Vermögen</h3>
+          <svg class="chart" id="vChart" viewBox="0 0 680 270" role="img" aria-labelledby="vTitle"></svg>
+        </div>
+        <div class="tablebox"><table id="vTable"></table></div>
+        <div class="tablebox"><table id="sTable"></table></div>
+      </section>
+
+      <section class="card" data-step="3" aria-labelledby="h3s">
+        <div class="stephead"><span class="stepno">3</span><h2 id="h3s">Mal Steuerfuss</h2></div>
+        <p>Kanton und Gemeinden multiplizieren die einfache Staatssteuer mit ihrem Steuerfuss. Der graue Balken ist die einfache Steuer (100 %), die farbigen Balken zeigen, wie viel jede Stelle davon verlangt.</p>
+        <div class="mult" id="mult"></div>
+      </section>
+
+      <section class="card" data-step="4" aria-labelledby="h4s">
+        <div class="stephead"><span class="stepno">4</span><h2 id="h4s">Steuerbetrag und Belastung</h2></div>
+        <div class="kpis" id="kpis"></div>
+        <div>
+          <h3>Wer erhält wie viel?</h3>
+          <div class="stack" id="stack" role="img" aria-label="Aufteilung des Steuerbetrags"></div>
+          <div class="legendrow" id="stackLegend" style="margin-top:8px"></div>
+        </div>
+        <div>
+          <h3 id="pTitle">Progression: Durchschnitts- und Grenzsteuersatz</h3>
+          <svg class="chart" id="pChart" viewBox="0 0 680 280" role="img" aria-labelledby="pTitle"></svg>
+          <div class="legendrow"><span><span class="sw" style="background:var(--c-avg)"></span>Durchschnittssteuersatz der Einkommenssteuer</span><span><span class="sw" style="background:var(--c-marg)"></span>Grenzsteuersatz (auf dem nächsten Franken)</span></div>
+        </div>
+        <div class="merke" id="merke"></div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="foot">
+    <span>Tarife: Kanton Zürich ab Steuerperiode 2026, § 35 und § 47 StG (Kantonsblatt Februar 2026, zusammengestellt von der <a href="https://www.estv2.admin.ch/stp/kb/zh-de.pdf" target="_blank" rel="noopener">ESTV</a>). Personalsteuer Fr. 24 (§ 200 StG). Steuerfüsse 2026: Kanton 95 %, Stadt Bülach 96 %, Sekundarschule Bülach 18 % (Stand 2025).</span>
+    <span>Beträge auf 5 Rappen gerundet. Unverbindliche Lernhilfe; für echte Berechnungen den <a href="https://swisstaxcalculator.estv.admin.ch" target="_blank" rel="noopener">Steuerrechner der ESTV</a> verwenden.</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+const TAR = {
+  G:{ E:[[7000,0],[5000,2],[4800,3],[8000,4],[9700,5],[11200,6],[13100,7],[17600,8],[34000,9],[33700,10],[53300,11],[69300,12],[null,13]],
+      V:[[81000,0],[241000,0.5],[404000,1],[645000,1.5],[968000,2],[965000,2.5],[null,3]] },
+  V:{ E:[[14100,0],[6400,2],[8100,3],[9800,4],[11200,5],[14500,6],[32200,7],[32400,8],[48500,9],[57900,10],[62900,11],[72600,12],[null,13]],
+      V:[[161000,0],[242000,0.5],[402000,1],[646000,1.5],[967000,2],[967000,2.5],[null,3]] }
+};
+const PERS = 24;
+const EX = {
+  lea:{status:"single",e:70000,v:150000},
+  nico:{status:"single",e:52000,v:30000},
+  meier:{status:"married",e:120000,v:400000}
+};
+const S = {status:"single",e:70000,v:150000,gmode:"buelach",g:100,kt:95};
+const $ = id => document.getElementById(id);
+const root = document.documentElement;
+
+const fmt = (n,d=2) => { const s=(Math.round(n*10**d)/10**d).toFixed(d); const [a,b]=s.split("."); return a.replace(/\B(?=(\d{3})+(?!\d))/g,"'")+(b?"."+b:""); };
+const fr = n => fmt(n,0);
+const pct = (n,d=1) => fmt(n,d).replace(".",",")+" %";
+const r05 = x => Math.round(x*20)/20;
+const rateTxt = (r,unit) => unit==="%" ? r+" %" : (r===0?"0":String(r).replace(/^0\.5$/,"½").replace(/\.5$/,"½"))+" ‰";
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function stages(x,t,div){ const out=[]; let lo=0, rest=x; for(const [w,r] of t){ const hi = w===null? Infinity : lo+w; const part = Math.max(0, Math.min(rest, hi-lo)); out.push({lo,hi,rate:r,part,tax:part*r/div}); rest-=part; lo=hi; if(w===null) break; } return out; }
+const tax = (x,t,div) => stages(x,t,div).reduce((s,o)=>s+o.tax,0);
+function marg(x,t){ let lo=0; for(const [w,r] of t){ if(w===null || x < lo+w) return r; lo+=w; } return t[t.length-1][1]; }
+
+function parts(){
+  return S.gmode==="buelach"
+    ? [{key:"kt",name:"Kanton Zürich",sf:S.kt,col:"--c-kt"},{key:"st",name:"Stadt Bülach",sf:96,col:"--c-st"},{key:"sek",name:"Sekundarschule Bülach",sf:18,col:"--c-sek"}]
+    : [{key:"kt",name:"Kanton Zürich",sf:S.kt,col:"--c-kt"},{key:"st",name:"Gemeinde inkl. Schule",sf:S.g,col:"--c-st"}];
+}
+function compute(){
+  const tk = S.status==="single" ? TAR.G : TAR.V;
+  const persons = S.status==="married" ? 2 : 1;
+  const se = tax(S.e,tk.E,100), sv = tax(S.v,tk.V,1000), s = se+sv;
+  const ps = parts().map(p => ({...p, amount:r05(s*p.sf/100)}));
+  const personal = PERS*persons;
+  const total = ps.reduce((a,p)=>a+p.amount,0)+personal;
+  const sfTot = ps.reduce((a,p)=>a+p.sf,0);
+  return {tk,persons,se,sv,s,ps,personal,total,sfTot};
+}
+
+/* ---------- Diagramm: Tariftreppe ---------- */
+function niceMax(v){ const p=10**Math.floor(Math.log10(v)); const m=v/p; return (m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*p; }
+function stairChart(svg, x, t, div, unit, xmaxMin, color){
+  const W=680,H=270,L=46,R=14,T=26,B=40, pw=W-L-R, ph=H-T-B;
+  const xmax = niceMax(Math.max(x*1.25, xmaxMin));
+  const ymax = div===100 ? 14 : 3.5;
+  const X = v => L + Math.min(v,xmax)/xmax*pw, Y = r => T + ph - r/ymax*ph;
+  let g = '<g class="grid">';
+  const yt = div===100 ? [0,2,4,6,8,10,12] : [0,0.5,1,1.5,2,2.5,3];
+  for(const y of yt){ g += `<line x1="${L}" x2="${W-R}" y1="${Y(y)}" y2="${Y(y)}"/><text x="${L-6}" y="${Y(y)+4}" text-anchor="end">${rateTxt(y,unit)}</text>`; }
+  g += '</g>';
+  const n=5, step=xmax/n;
+  for(let i=0;i<=n;i++){ const v=i*step; g += `<text x="${X(v)}" y="${H-B+18}" text-anchor="${i===0?'start':i===n?'end':'middle'}">${v>=1e6? fmt(v/1e6,1).replace('.',',')+' Mio.' : fr(v)}</text>`; }
+  g += `<text x="${W-R}" y="${H-4}" text-anchor="end">Fr.</text>`;
+  const st = stages(Math.max(xmax,1), t, div);
+  let shapes = '', i=0;
+  for(const o of st){
+    const lo=o.lo, hi=Math.min(o.hi,xmax); if(lo>=xmax) break;
+    const top=Y(o.rate), h=Y(0)-top;
+    shapes += `<rect x="${X(lo)}" y="${top}" width="${X(hi)-X(lo)}" height="${h}" fill="var(--surface-2)"/>`;
+    if(x>lo && o.rate>0){
+      const xe=Math.min(x,hi); const part=xe-lo;
+      shapes += `<rect x="${X(lo)}" y="${top}" width="${X(xe)-X(lo)}" height="${h}" fill="var(${color})" fill-opacity="${i%2? .62 : .9}"><title>${fr(lo)} bis ${fr(xe)}: ${fr(part)} × ${rateTxt(o.rate,unit)} = Fr. ${fmt(part*o.rate/div)}</title></rect>`;
+      i++;
+    }
+    if(X(hi)-X(lo) > 26 && o.rate>0) shapes += `<text x="${(X(lo)+X(hi))/2}" y="${top-5}" text-anchor="middle">${rateTxt(o.rate,unit)}</text>`;
+  }
+  // Treppenlinie
+  let path = `M ${X(0)} ${Y(0)}`;
+  for(const o of st){ if(o.lo>=xmax) break; path += ` L ${X(o.lo)} ${Y(o.rate)} L ${X(Math.min(o.hi,xmax))} ${Y(o.rate)}`; }
+  shapes += `<path d="${path}" fill="none" stroke="var(--muted)" stroke-width="1.2"/>`;
+  shapes += `<line x1="${L}" x2="${W-R}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--muted)"/>`;
+  // Markierung
+  const mx = X(x);
+  const anchor = mx > W-140 ? "end" : "start", off = anchor==="end" ? -6 : 6;
+  shapes += `<line x1="${mx}" x2="${mx}" y1="${T-12}" y2="${Y(0)}" stroke="var(--text)" stroke-width="2" stroke-dasharray="4 3"/>`;
+  shapes += `<text class="lbl" x="${mx+off}" y="${T-14}" text-anchor="${anchor}">Fr. ${fr(x)}: Steuer Fr. ${fmt(tax(x,t,div))}</text>`;
+  svg.innerHTML = g + shapes;
+}
+
+/* ---------- Diagramm: Progression ---------- */
+function progChart(svg, x, tk, sfTot){
+  const W=680,H=280,L=46,R=14,T=24,B=40, pw=W-L-R, ph=H-T-B;
+  const xmax = niceMax(Math.max(300000, x*1.4));
+  const ymax = Math.ceil(13*sfTot/100/5)*5 + 5;
+  const X=v=>L+v/xmax*pw, Y=r=>T+ph-r/ymax*ph;
+  let g='<g class="grid">';
+  for(let y=0;y<=ymax;y+=5) g+=`<line x1="${L}" x2="${W-R}" y1="${Y(y)}" y2="${Y(y)}"/><text x="${L-6}" y="${Y(y)+4}" text-anchor="end">${y} %</text>`;
+  g+='</g>';
+  for(let i=0;i<=5;i++){ const v=i*xmax/5; g+=`<text x="${X(v)}" y="${H-B+18}" text-anchor="${i===0?'start':i===5?'end':'middle'}">${fr(v)}</text>`; }
+  g+=`<text x="${W-R}" y="${H-4}" text-anchor="end">Steuerbares Einkommen, Fr.</text>`;
+  let avg='', mg='';
+  const N=160;
+  for(let i=0;i<=N;i++){ const v=Math.max(1,i*xmax/N); const a=tax(v,tk.E,100)/v*sfTot; avg+=(i?' L ':'M ')+X(v).toFixed(1)+' '+Y(a).toFixed(1); }
+  let lo=0, first=true;
+  for(const [w,r] of tk.E){ const hi = w===null? xmax : Math.min(lo+w,xmax); const y=Y(r*sfTot/100); mg += (first?`M ${X(lo)} ${y}`:` L ${X(lo)} ${y}`)+` L ${X(hi)} ${y}`; first=false; lo+= (w||0); if(w===null || lo>=xmax) break; }
+  const av = x>0 ? tax(x,tk.E,100)/x*sfTot : 0, mr = marg(x,tk.E)*sfTot/100;
+  const mx=X(Math.min(x,xmax));
+  let s = `<path d="${mg}" fill="none" stroke="var(--c-marg)" stroke-width="2" stroke-dasharray="6 4"/>`;
+  s += `<path d="${avg}" fill="none" stroke="var(--c-avg)" stroke-width="3"/>`;
+  s += `<line x1="${mx}" x2="${mx}" y1="${T}" y2="${Y(0)}" stroke="var(--text)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+  s += `<circle cx="${mx}" cy="${Y(av)}" r="5" fill="var(--c-avg)" stroke="var(--surface)" stroke-width="2"/>`;
+  s += `<circle cx="${mx}" cy="${Y(mr)}" r="5" fill="var(--c-marg)" stroke="var(--surface)" stroke-width="2"/>`;
+  const anchor = mx > W-170 ? "end":"start", off = anchor==="end"?-8:8;
+  s += `<text class="lbl" x="${mx+off}" y="${Y(av)+(av<mr? 16 : -8)}" text-anchor="${anchor}">Ø Einkommen ${pct(av)}</text>`;
+  s += `<text class="lbl" x="${mx+off}" y="${Y(mr)-8}" text-anchor="${anchor}">Grenze ${pct(mr)}</text>`;
+  s += `<line x1="${L}" x2="${W-R}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--muted)"/>`;
+  svg.innerHTML = g+s;
+}
+
+/* ---------- Tabellen und Schritt 3/4 ---------- */
+function stageTable(el, x, t, div, unit, label){
+  const rows = stages(x,t,div).filter(o=>o.part>0);
+  let h = `<thead><tr><th>${label}teil (Fr.)</th><th class="r">Betrag</th><th class="r">Satz</th><th class="r">Steuer (Fr.)</th></tr></thead><tbody>`;
+  for(const o of rows) h += `<tr><td class="num">${fr(o.lo)} bis ${fr(o.lo+o.part)}</td><td class="r num">${fr(o.part)}</td><td class="r num">${rateTxt(o.rate,unit)}</td><td class="r num">${fmt(o.tax)}</td></tr>`;
+  if(!rows.length) h += `<tr><td colspan="4" class="muted">Kein ${label.toLowerCase()} erfasst.</td></tr>`;
+  h += `<tr class="total"><td>Einfache Steuer ${label}</td><td></td><td></td><td class="r num">${fmt(tax(x,t,div))}</td></tr></tbody>`;
+  el.innerHTML = h;
+}
+function render(){
+  const c = compute();
+  const tarifName = S.status==="single" ? "Grundtarif" : "Verheiratetentarif";
+  $("eTitle").textContent = `Einkommen, ${tarifName}`;
+  $("vTitle").textContent = `Vermögen, ${tarifName}`;
+  stairChart($("eChart"), S.e, c.tk.E, 100, "%", 100000, "--c-stage");
+  stairChart($("vChart"), S.v, c.tk.V, 1000, "‰", 600000, "--c-wealth");
+  stageTable($("eTable"), S.e, c.tk.E, 100, "%", "Einkommen");
+  stageTable($("vTable"), S.v, c.tk.V, 1000, "‰", "Vermögen");
+  $("sTable").innerHTML = `<tbody><tr><td>Einfache Steuer Einkommen</td><td class="r num">${fmt(c.se)}</td></tr><tr><td>Einfache Steuer Vermögen</td><td class="r num">${fmt(c.sv)}</td></tr><tr class="total"><td>Einfache Staatssteuer</td><td class="r num">Fr. ${fmt(c.s)}</td></tr></tbody>`;
+
+  // Schritt 3
+  const maxSf = Math.max(100, ...c.ps.map(p=>p.sf));
+  let m = `<div class="mrow"><span class="name"><b>Einfache Staatssteuer</b></span><div class="bar"><span style="width:${100/maxSf*100}%;background:var(--muted);opacity:.45"></span></div><span class="val">Fr. ${fmt(c.s)}</span></div>`;
+  for(const p of c.ps) m += `<div class="mrow"><span class="name"><span class="sw" style="background:var(${p.col})"></span>${esc(p.name)}<br><span class="calc">× ${p.sf} %</span></span><div class="bar"><span style="width:${p.sf/maxSf*100}%;background:var(${p.col})"></span></div><span class="val">Fr. ${fmt(p.amount)}</span></div>`;
+  m += `<div class="mrow"><span class="name"><span class="sw" style="background:var(--c-ps)"></span>Personalsteuer<br><span class="calc">${c.persons} × Fr. ${PERS}</span></span><div class="bar"><span style="width:${c.s>0? Math.min(100,c.personal/c.s*100/maxSf*100):0}%;background:var(--c-ps)"></span></div><span class="val">Fr. ${fmt(c.personal)}</span></div>`;
+  m += `<p class="calc">Gesamtsteuerfuss: ${c.ps.map(p=>p.sf+" %").join(" + ")} = ${c.sfTot} %. Also: ${fmt(c.s)} × ${c.sfTot} % + ${fmt(c.personal)} = Fr. ${fmt(c.total)}.</p>`;
+  $("mult").innerHTML = m;
+
+  // Schritt 4
+  const avg = S.e>0 ? c.total/S.e*100 : 0;
+  const mr = marg(S.e,c.tk.E)*c.sfTot/100;
+  $("kpis").innerHTML =
+    `<div class="kpi"><span class="k">Staats- und Gemeindesteuern</span><span class="v">Fr. ${fmt(c.total)}</span><span class="s">pro Monat Fr. ${fmt(r05(c.total/12))}</span></div>`+
+    `<div class="kpi"><span class="k">Durchschnittssteuersatz</span><span class="v">${pct(avg)}</span><span class="s">alle Steuern ÷ steuerbares Einkommen</span></div>`+
+    `<div class="kpi"><span class="k">Grenzsteuersatz</span><span class="v">${pct(mr)}</span><span class="s">${marg(S.e,c.tk.E)} % Tarif × ${c.sfTot} %</span></div>`;
+  const items = [...c.ps.map(p=>({name:p.name,amount:p.amount,col:p.col})),{name:"Personalsteuer",amount:c.personal,col:"--c-ps"}];
+  $("stack").innerHTML = items.map(it=>`<span style="width:${c.total>0? it.amount/c.total*100:0}%;background:var(${it.col})" title="${esc(it.name)}: Fr. ${fmt(it.amount)}"></span>`).join("");
+  $("stackLegend").innerHTML = items.map(it=>`<span><span class="sw" style="background:var(${it.col})"></span>${esc(it.name)}: <b class="num">Fr. ${fmt(it.amount)}</b> (${pct(c.total>0? it.amount/c.total*100:0,0)})</span>`).join("");
+  progChart($("pChart"), S.e, c.tk, c.sfTot);
+  const extra = r05(1000*marg(S.e,c.tk.E)/100*c.sfTot/100);
+  $("merke").innerHTML = `<b>Merke</b>Verdient diese Person Fr. 1'000 mehr, steigen ihre Staats- und Gemeindesteuern um rund Fr. ${fmt(extra)} (Grenzsteuersatz ${pct(mr)}). Der Durchschnittssteuersatz bleibt immer darunter, weil die tieferen Stufen tiefer besteuert werden.`;
+
+  const sit = $("status").selectedOptions[0].textContent;
+  const gem = S.gmode==="buelach" ? "Bülach" : `Gemeindesteuerfuss ${S.g} %`;
+  $("summary").textContent = `${sit} · Einkommen Fr. ${fr(S.e)} · Vermögen Fr. ${fr(S.v)} · ${gem}`;
+}
+
+/* ---------- Eingaben ---------- */
+function syncInputs(){
+  $("status").value=S.status; $("eNum").value=S.e; $("eRange").value=Math.min(S.e,400000);
+  $("vNum").value=S.v; $("vRange").value=Math.min(S.v,3000000);
+  $("gmode").value=S.gmode; $("gNum").value=S.g; $("gRange").value=Math.min(Math.max(S.g,60),140);
+  $("ktNum").value=S.kt; $("gcustomField").hidden = S.gmode!=="custom";
+}
+const num = (v,max) => { const n = Math.round(Number(v)); return isFinite(n) ? Math.max(0, Math.min(n, max)) : 0; };
+$("status").addEventListener("change",e=>{S.status=e.target.value;render();});
+$("eNum").addEventListener("input",e=>{S.e=num(e.target.value,5e6);$("eRange").value=Math.min(S.e,400000);render();});
+$("eRange").addEventListener("input",e=>{S.e=num(e.target.value,5e6);$("eNum").value=S.e;render();});
+$("vNum").addEventListener("input",e=>{S.v=num(e.target.value,1e9);$("vRange").value=Math.min(S.v,3000000);render();});
+$("vRange").addEventListener("input",e=>{S.v=num(e.target.value,1e9);$("vNum").value=S.v;render();});
+$("gmode").addEventListener("change",e=>{S.gmode=e.target.value;$("gcustomField").hidden=S.gmode!=="custom";render();});
+$("gNum").addEventListener("input",e=>{S.g=num(e.target.value,300);$("gRange").value=Math.min(Math.max(S.g,60),140);render();});
+$("gRange").addEventListener("input",e=>{S.g=num(e.target.value,300);$("gNum").value=S.g;render();});
+$("ktNum").addEventListener("input",e=>{S.kt=num(e.target.value,300);render();});
+document.querySelectorAll("[data-ex]").forEach(b=>b.addEventListener("click",()=>{Object.assign(S,EX[b.dataset.ex],{gmode:"buelach",kt:95});syncInputs();render();}));
+
+/* ---------- Varianten ---------- */
+function setVariant(v){ root.dataset.variant=v; $("va").setAttribute("aria-pressed",v==="a"); $("vb").setAttribute("aria-pressed",v==="b"); try{localStorage.setItem("steuertreppe-variant",v);}catch(e){} }
+$("va").addEventListener("click",()=>setVariant("a"));
+$("vb").addEventListener("click",()=>setVariant("b"));
+let saved="a"; try{ saved = localStorage.getItem("steuertreppe-variant") || "a"; }catch(e){}
+setVariant(saved==="b"?"b":"a");
+
+/* ---------- Beamer ---------- */
+let step=1;
+function showStep(n){
+  step=Math.min(4,Math.max(1,n));
+  document.querySelectorAll("[data-step]").forEach(el=>el.classList.toggle("show", Number(el.dataset.step)===step));
+  document.querySelectorAll("[data-go]").forEach(b=>b.setAttribute("aria-current", Number(b.dataset.go)===step ? "step" : "false"));
+  $("summary").classList.toggle("hidden-on-1", step===1);
+}
+$("beamerBtn").addEventListener("click",()=>{ const on=!root.classList.contains("beamer"); root.classList.toggle("beamer",on); $("beamerBtn").setAttribute("aria-pressed",on); $("beamerBtn").textContent = on ? "Beamer-Modus beenden" : "Beamer-Modus"; showStep(step); });
+$("prevBtn").addEventListener("click",()=>showStep(step-1));
+$("nextBtn").addEventListener("click",()=>showStep(step+1));
+document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>showStep(Number(b.dataset.go))));
+document.addEventListener("keydown",e=>{
+  if(!root.classList.contains("beamer")) return;
+  if(["INPUT","SELECT","TEXTAREA"].includes(document.activeElement.tagName)) return;
+  if(e.key==="ArrowRight"||e.key==="PageDown"){showStep(step+1);e.preventDefault();}
+  if(e.key==="ArrowLeft"||e.key==="PageUp"){showStep(step-1);e.preventDefault();}
+});
+$("fsBtn").addEventListener("click",async()=>{ try{ if(document.fullscreenElement) await document.exitFullscreen(); else await root.requestFullscreen(); }catch(e){ $("fsBtn").textContent="Vollbild nicht verfügbar"; } });
+
+syncInputs(); render(); showStep(1);
+})();
+</script>
+
+</body></html>

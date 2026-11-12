@@ -1,0 +1,458 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!-- Entscheidungen:
+Einsatztyp: Lernmaterial EWR (Schüler:innen am eigenen Gerät) mit Beamer-Modus (grosse Schrift) für den Unterricht.
+Funktion: Rechner + Erklärung. Bruttomonatslohn, Alter, 13. Monatslohn sowie NBU-, KTG- und BVG-Risikosatz einstellbar; die Lohnabrechnung rechnet live.
+  Jede Zeile ist anklickbar und öffnet die Erklärung (Zweck, wer zahlt, Satz und Basis, Rechnung mit den aktuellen Zahlen, Gesetzesartikel).
+  Zusatz: Arbeitgeberbeiträge und totale Lohnkosten. Ohne Kinderzulagen, Quellensteuer und Lernenden-Beispiele (nicht gewählt).
+Werte 2026: AHV 4,35 %, IV 0,7 %, EO 0,25 %, ALV 1,1 % bis Fr. 148'200 (je AN und AG); BVG Eintrittsschwelle 22'680, Koordinationsabzug 26'460,
+  koordinierter Lohn min. 3'780 / max. 64'260, Altersgutschriften Art. 16 BVG; UVG-Höchstlohn 148'200.
+Pensionskasse wählbar: gesetzliches Minimum (BVG, Altersgutschrift + Risikobeitrag je zur Hälfte) oder BVK Kanton Zürich, Vorsorgeplan Standard
+  (Beitragssätze ab 1.1.2026: versicherter Lohn = Jahreslohn − 26'460; AN Spar 0–11,6 % + Risiko 0,8 %, AG Spar 0–17,4 % + Risiko 1,2 %).
+  Rechenweg: zuerst Franken pro Jahr (Spar- und Risikobeitrag, AN und AG), dann ÷ 12 pro Monat, daraus der Anteil am Bruttolohn in %. NBU, KTG, BU, FAK (SVA ZH 1,025 %), Verwaltungskosten = Beispielsätze.
+Datenhaltung: nur Komfort (Variante in localStorage). Kein Export.
+Design: Nord-Farbschema, Open Sans + Google Sans Code (Beträge). Hell/Dunkel folgt System.
+Variante A «Klar»: sachlich, feine Linien, Frost als einziger Akzent. Variante B «Lebendig»: rundere Karten, grössere Titel, Aurora-Farben je Versicherungsgruppe.
+-->
+<title>Lohnabrechnung erklärt</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400;600&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: oben Eingaben, darunter links die Lohnabrechnung als Beleg, rechts die Erklärung zur gewählten Zeile; unten Brutto-zu-Netto-Balken und Arbeitgebersicht. */
+:root{
+  --nord0:#2E3440;--nord1:#3B4252;--nord2:#434C5E;--nord3:#4C566A;--nord4:#D8DEE9;--nord5:#E5E9F0;--nord6:#ECEFF4;
+  --nord7:#8FBCBB;--nord8:#88C0D0;--nord9:#81A1C1;--nord10:#5E81AC;--nord11:#BF616A;--nord12:#D08770;--nord13:#EBCB8B;--nord14:#A3BE8C;--nord15:#B48EAD;
+  --bg:var(--nord6);--surface:#fff;--surface-2:var(--nord5);--line:var(--nord4);--text:var(--nord0);--muted:var(--nord3);
+  --accent:var(--nord10);--accent-soft:var(--nord9);--sel:rgba(94,129,172,.12);
+  --g-1:var(--nord10);--g-alv:var(--nord9);--g-uv:var(--nord8);--g-bvg:var(--nord7);--g-ktg:var(--nord3);--g-net:var(--nord14);--g-ag:var(--nord3);
+  --radius:4px;--radius-sm:3px;--card-border:1px solid var(--line);--card-shadow:none;--h-weight:600;--h2-size:1.2rem;--gap:24px;
+  --font:"Open Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"Google Sans Code",ui-monospace,"Cascadia Code",Consolas,"SF Mono",monospace;
+  --fs:17px;
+}
+:root[data-variant="b"]{
+  --g-1:var(--nord10);--g-alv:var(--nord12);--g-uv:var(--nord13);--g-bvg:var(--nord14);--g-ktg:var(--nord15);--g-ag:var(--nord9);
+  --radius:16px;--radius-sm:10px;--card-border:1px solid transparent;--card-shadow:0 1px 2px rgba(46,52,64,.06),0 6px 18px rgba(46,52,64,.07);--h-weight:700;--h2-size:1.45rem;--gap:20px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--bg:var(--nord0);--surface:var(--nord1);--surface-2:var(--nord2);--line:var(--nord2);--text:var(--nord6);--muted:var(--nord4);--accent:var(--nord8);--sel:rgba(136,192,208,.14);--g-ktg:var(--nord4);--g-ag:var(--nord4);color-scheme:dark}
+  :root:not([data-theme="light"])[data-variant="b"]{--g-ktg:var(--nord15);--g-ag:var(--nord9);--card-shadow:none;--card-border:1px solid var(--nord2)}
+}
+:root[data-theme="dark"]{--bg:var(--nord0);--surface:var(--nord1);--surface-2:var(--nord2);--line:var(--nord2);--text:var(--nord6);--muted:var(--nord4);--accent:var(--nord8);--sel:rgba(136,192,208,.14);--g-ktg:var(--nord4);--g-ag:var(--nord4);color-scheme:dark}
+:root[data-theme="dark"][data-variant="b"]{--g-ktg:var(--nord15);--g-ag:var(--nord9);--card-shadow:none;--card-border:1px solid var(--nord2)}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:var(--fs);line-height:1.6;margin:0}
+.wrap{max-width:1200px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:var(--gap)}
+h1,h2,h3{text-wrap:balance;line-height:1.25;margin:0}
+h1{font-size:1.75rem;font-weight:700}
+h2{font-size:var(--h2-size);font-weight:var(--h-weight)}
+h3{font-size:1rem;font-weight:600}
+p{margin:0;max-width:70ch}
+.muted{color:var(--muted)}
+.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+a{color:var(--accent);text-decoration:underline}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
+
+.top{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end;justify-content:space-between}
+.lead{display:flex;flex-direction:column;gap:6px;min-width:0}
+.eyebrow{font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.tools{display:flex;flex-wrap:wrap;gap:8px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;padding:6px 12px;cursor:pointer;font-size:.9rem}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--bg);font-weight:600}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-sm);padding:6px 12px;cursor:pointer;font-size:.9rem}
+.btn:hover{border-color:var(--accent)}
+:root[data-variant="b"] .seg,:root[data-variant="b"] .btn{border-radius:999px}
+
+.card{background:var(--surface);border:var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow);padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+
+/* Eingaben */
+.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px 18px;align-items:end}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-weight:600;font-size:.88rem}
+.inrow{display:flex;gap:6px;align-items:center}
+.field select{width:100%;min-width:0;padding:6px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg)}
+.inrow input{width:100%;min-width:0;padding:6px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg);font-family:var(--font-mono)}
+.unit{color:var(--muted);font-size:.88rem;flex:none}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.check{display:flex;gap:8px;align-items:center;font-weight:600;font-size:.88rem;padding-bottom:6px}
+.check input{width:1.1rem;height:1.1rem;accent-color:var(--accent)}
+.hint{font-size:.84rem;color:var(--muted)}
+details.more summary{cursor:pointer;font-size:.9rem;color:var(--muted)}
+details.more .inputs{margin-top:10px}
+
+/* Hauptbereich */
+.main{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:var(--gap);align-items:start}
+@media (max-width:880px){.main{grid-template-columns:minmax(0,1fr)}}
+.explain{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+@media (max-width:880px){.explain{position:static}}
+
+/* Beleg */
+.slip{padding:0;gap:0;overflow:hidden}
+.slip-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:18px 20px;border-bottom:1px solid var(--line)}
+:root[data-variant="b"] .slip-head{background:var(--surface-2);border-bottom:0}
+.slip-head .firm{font-weight:700}
+.slip-head .meta{font-size:.85rem;color:var(--muted);text-align:right}
+.rows{display:flex;flex-direction:column;padding:8px 8px 12px}
+.row{display:grid;grid-template-columns:14px minmax(0,1fr) 6.2rem 7.2rem;gap:10px;align-items:center;padding:7px 12px;border:0;background:transparent;text-align:left;cursor:pointer;border-radius:var(--radius-sm);width:100%}
+.row:hover{background:var(--sel)}
+.row[aria-pressed="true"]{background:var(--sel);box-shadow:inset 3px 0 0 var(--accent)}
+:root[data-variant="b"] .row[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--accent)}
+.row .dot{width:12px;height:12px;border-radius:3px}
+:root[data-variant="b"] .row .dot{border-radius:50%}
+.row .name{min-width:0}
+.row .name small{display:block;color:var(--muted);font-size:.8rem}
+.row .rate,.row .amt{font-family:var(--font-mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.row .rate{color:var(--muted);font-size:.88rem}
+.row.sum{cursor:pointer;font-weight:700;border-top:2px solid var(--text);border-radius:0;margin-top:4px}
+.row.sub{font-weight:600;border-top:1px solid var(--line);border-radius:0}
+.sep{height:6px}
+.cap{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:10px 12px 2px}
+@media (max-width:480px){.row{grid-template-columns:12px minmax(0,1fr) 6.4rem}.row .rate{display:none}}
+
+/* Erklärung */
+.explain h2{display:flex;gap:10px;align-items:center}
+.explain .dot{width:14px;height:14px;border-radius:3px;flex:none}
+:root[data-variant="b"] .explain .dot{border-radius:50%}
+.facts{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 14px;font-size:.95rem;margin:0}
+.facts dt{color:var(--muted);font-weight:600}
+.facts dd{margin:0}
+.calcbox{font-family:var(--font-mono);font-size:.9rem;background:var(--surface-2);border-radius:var(--radius-sm);padding:10px 12px;overflow-x:auto;white-space:pre-wrap}
+.law{border:2px solid var(--nord10);border-radius:var(--radius-sm);padding:10px 14px;font-size:.93rem}
+.law .src{font-weight:700;color:var(--accent);display:block;margin-bottom:2px}
+.ptab{width:100%;border-collapse:collapse;font-size:.86rem}
+.ptab th,.ptab td{padding:3px 8px;border-bottom:1px solid var(--line);text-align:right;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.ptab th{font-family:var(--font);font-weight:600;color:var(--muted);font-size:.78rem}
+.ptab th:first-child,.ptab td:first-child{text-align:left}
+.ptab tr.cur td{background:var(--sel);font-weight:600}
+.ptab tr.cur td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+.tabbox{overflow-x:auto}
+.tip{border-left:4px solid var(--nord15);background:var(--surface-2);padding:8px 12px;border-radius:0 var(--radius-sm) var(--radius-sm) 0;font-size:.93rem}
+:root[data-variant="b"] .tip{border-left:0;border-radius:var(--radius-sm);background:color-mix(in srgb,var(--nord15) 18%,var(--surface))}
+
+/* Balken */
+.bars{display:flex;flex-direction:column;gap:16px}
+.barline{display:flex;flex-direction:column;gap:6px}
+.barline .lab{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:.92rem}
+.stack{display:flex;height:40px;border-radius:var(--radius-sm);overflow:hidden;background:var(--surface-2)}
+.stack button{border:0;padding:0;height:100%;cursor:pointer;transition:width .35s ease;min-width:0}
+.stack button:hover{filter:brightness(1.08)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.86rem;color:var(--muted)}
+.sw{display:inline-block;width:.8em;height:.8em;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+:root[data-variant="b"] .kpi{border:0;background:var(--surface-2)}
+.kpi .k{font-size:.8rem;color:var(--muted);font-weight:600}
+.kpi .v{font-family:var(--font-mono);font-size:1.3rem;font-weight:600;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:.82rem;color:var(--muted)}
+
+:root.beamer{--fs:22px}
+:root.beamer .wrap{max-width:1500px}
+:root.beamer .card{border-width:2px}
+.foot{font-size:.84rem;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+@media (prefers-reduced-motion: reduce){.stack button{transition:none}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="lead">
+      <span class="eyebrow">EWR · Sozialversicherungen · Stand 2026</span>
+      <h1>Lohnabrechnung erklärt</h1>
+      <p class="muted">Vom Bruttolohn zum Nettolohn: Klicken Sie auf eine Zeile der Abrechnung, um zu sehen, wofür der Abzug ist und wie er berechnet wird.</p>
+    </div>
+    <div class="tools">
+      <div class="seg" role="group" aria-label="Design-Variante">
+        <button type="button" id="va" aria-pressed="true">Variante A</button>
+        <button type="button" id="vb" aria-pressed="false">Variante B</button>
+      </div>
+      <button type="button" class="btn" id="beamerBtn" aria-pressed="false">Beamer-Modus</button>
+    </div>
+  </header>
+
+  <section class="card" aria-label="Eingaben">
+    <div class="inputs">
+      <div class="field">
+        <label for="brutto">Bruttolohn pro Monat</label>
+        <div class="inrow"><span class="unit">Fr.</span><input type="number" id="brutto" min="0" step="50" inputmode="numeric"></div>
+        <input type="range" id="bruttoR" min="500" max="16000" step="50" aria-label="Bruttolohn, Regler">
+      </div>
+      <div class="field">
+        <label for="alter">Alter</label>
+        <div class="inrow"><input type="number" id="alter" min="16" max="70" step="1" inputmode="numeric"><span class="unit">Jahre</span></div>
+        <input type="range" id="alterR" min="16" max="65" step="1" aria-label="Alter, Regler">
+      </div>
+      <label class="check" for="ml13"><input type="checkbox" id="ml13"> 13. Monatslohn vereinbart</label>
+      <div class="field">
+        <label for="plan">Pensionskasse</label>
+        <select id="plan">
+          <option value="bvg">Gesetzliches Minimum (BVG)</option>
+          <option value="bvk">BVK Kanton Zürich, Plan Standard</option>
+        </select>
+      </div>
+    </div>
+    <details class="more">
+      <summary>Weitere Sätze anpassen (je nach Betrieb verschieden)</summary>
+      <div class="inputs">
+        <div class="field"><label for="nbu">NBU, Anteil Arbeitnehmer</label><div class="inrow"><input type="number" id="nbu" min="0" max="5" step="0.05"><span class="unit">%</span></div></div>
+        <div class="field"><label for="ktg">Krankentaggeld, Anteil Arbeitnehmer</label><div class="inrow"><input type="number" id="ktg" min="0" max="5" step="0.05"><span class="unit">%</span></div></div>
+        <div class="field" id="riskField"><label for="risk">Risikobeitrag BVG-Minimum (AN + AG)</label><div class="inrow"><input type="number" id="risk" min="0" max="10" step="0.1"><span class="unit">% koord. Lohn</span></div></div>
+        <div class="field"><label for="bu">Berufsunfall (nur Arbeitgeber)</label><div class="inrow"><input type="number" id="bu" min="0" max="5" step="0.05"><span class="unit">%</span></div></div>
+      </div>
+    </details>
+  </section>
+
+  <div class="main">
+    <section class="card slip" aria-labelledby="slipTitle">
+      <div class="slip-head">
+        <div><div class="firm" id="slipTitle">Lohnabrechnung Oktober 2026</div><div class="hint">Beispielfirma «Muster AG», Zürich</div></div>
+        <div class="meta" id="slipMeta"></div>
+      </div>
+      <div class="rows" id="rows"></div>
+    </section>
+
+    <aside class="card explain" id="explain" aria-live="polite"></aside>
+  </div>
+
+  <section class="card" aria-labelledby="hBars">
+    <h2 id="hBars">Wohin geht der Lohn?</h2>
+    <div class="kpis" id="kpis"></div>
+    <div class="bars" id="bars"></div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <footer class="foot">
+    <span>Sätze 2026: AHV/IV/EO 5,3 % und ALV 1,1 % je Arbeitnehmer und Arbeitgeber (ALV bis Fr. 148'200 Jahreslohn); BVG: Eintrittsschwelle Fr. 22'680, Koordinationsabzug Fr. 26'460, Altersgutschriften nach Art. 16 BVG. Quellen: <a href="https://www.swissmem.ch/de/wissen/personalwesen/arbeitsrecht/sozialversicherungsbeitraege-2026.html" target="_blank" rel="noopener">Swissmem, Sozialversicherungsbeiträge 2026</a>, <a href="https://www.bsv.admin.ch/dam/de/sd-web/GZplHByBJoFc/Internet_Masszahlenarticles_25_26_d.pdf" target="_blank" rel="noopener">BSV, Grenzbeträge BVG 2026</a>.</span>
+    <span>NBU, Krankentaggeld, Berufsunfall, Familienausgleichskasse (SVA Zürich 1,025 %) und Verwaltungskosten sind Beispielwerte; sie hängen vom Betrieb ab. Pensionskasse wahlweise mit dem gesetzlichen Minimum (Risikobeitrag als Beispielwert) oder mit dem BVK-Vorsorgeplan Standard (<a href="https://www.staff.uzh.ch/dam/jcr:b1cfc8ea-d56d-48e6-96f0-fa90d90fb475/Sozialversicherungsbeitr%C3%A4ge_Reglement_DE_20260101.pdf" target="_blank" rel="noopener">Beitragssätze ab 1.1.2026</a>); Teilzeit ist nicht berücksichtigt. Beträge auf 5 Rappen gerundet. Unverbindliche Lernhilfe.</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+const $ = id => document.getElementById(id);
+const root = document.documentElement;
+const S = {brutto:6500, alter:30, ml13:true, plan:"bvg", nbu:1.2, ktg:0.5, risk:2.0, bu:0.2};
+/* BVK Vorsorgeplan Standard ab 1.1.2026: Sparbeiträge in % des versicherten Lohns, Risikobeitrag AN 0,8 %, AG 1,2 % */
+const BVK = [[18,20,0,0],[21,23,4.0,6.0],[24,27,5.2,7.8],[28,32,6.4,9.6],[33,37,7.6,11.4],[38,42,8.8,13.2],[43,47,10.0,15.0],[48,52,10.8,16.2],[53,65,11.6,17.4]];
+const BVK_RISK = {an:0.8, ag:1.2};
+const BVG_TAB = [[25,34,7],[35,44,10],[45,54,15],[55,65,18]];
+const R = {ahv:4.35, iv:0.7, eo:0.25, alv:1.1, fak:1.025, vk:2.0, alvMax:148200, uvMax:148200, bvgMin:22680, koord:26460, kMin:3780, kMax:64260, lohnMax:907200};
+
+const fmt = (n,d=2) => { const neg=n<0; const s=(Math.round(Math.abs(n)*10**d)/10**d).toFixed(d); const [a,b]=s.split("."); return (neg?"−":"")+a.replace(/\B(?=(\d{3})+(?!\d))/g,"'")+(b?"."+b:""); };
+const pc = (n,d=2) => fmt(n,d).replace(".",",")+" %";
+const r05 = x => Math.round(x*20)/20;
+function ags(age){ if(age<25) return 0; if(age<35) return 7; if(age<45) return 10; if(age<55) return 15; return 18; }
+
+function compute(){
+  const m = S.brutto, n = S.ml13 ? 13 : 12, jahr = m*n;
+  const capM = (cap) => Math.min(m, cap/n);           // monatliche Obergrenze (Jahreshöchstlohn verteilt auf die Lohnzahlungen)
+  const alvBase = capM(R.alvMax), uvBase = capM(R.uvMax);
+  // Pensionskasse: zuerst Franken pro Jahr, dann pro Monat, daraus der Prozentanteil
+  const bvk = S.plan === "bvk";
+  const minAge = bvk ? 18 : 17;
+  const bvgIn = jahr >= R.bvgMin && S.alter >= minAge && S.alter <= 65;
+  let koord = 0, sp = {an:0, ag:0, anPct:0, agPct:0}, ri = {an:0, ag:0, anPct:0, agPct:0}, row = null;
+  if (bvgIn) {
+    if (bvk) {
+      koord = Math.max(Math.min(jahr, R.lohnMax) - R.koord, R.kMin);
+      row = BVK.find(r => S.alter >= r[0] && S.alter <= r[1]);
+      sp = {anPct:row[2], agPct:row[3]}; ri = {anPct:BVK_RISK.an, agPct:BVK_RISK.ag};
+    } else {
+      koord = Math.min(Math.max(Math.min(jahr, R.koord + R.kMax) - R.koord, R.kMin), R.kMax);
+      const a = ags(S.alter);
+      sp = {anPct:a/2, agPct:a/2}; ri = {anPct:S.risk/2, agPct:S.risk/2};
+    }
+    sp.an = koord*sp.anPct/100; sp.ag = koord*sp.agPct/100;
+    ri.an = koord*ri.anPct/100; ri.ag = koord*ri.agPct/100;
+  }
+  const pkAnJahr = sp.an + ri.an, pkAgJahr = sp.ag + ri.ag;
+  const ag = ags(S.alter);
+  const L = {
+    ahv:r05(m*R.ahv/100), iv:r05(m*R.iv/100), eo:r05(m*R.eo/100), alv:r05(alvBase*R.alv/100),
+    nbu:r05(uvBase*S.nbu/100), ktg:r05(m*S.ktg/100), bvg:r05(pkAnJahr/12)
+  };
+  const abz = Object.values(L).reduce((a,b)=>a+b,0);
+  const netto = r05(m - abz);
+  const AG = {
+    ahvivEo:r05(m*(R.ahv+R.iv+R.eo)/100), alv:L.alv, fak:r05(m*R.fak/100), vk:r05(m*(R.ahv+R.iv+R.eo)*2/100*R.vk/100),
+    bu:r05(uvBase*S.bu/100), ktg:L.ktg, bvg:r05(pkAgJahr/12)
+  };
+  const agTot = Object.values(AG).reduce((a,b)=>a+b,0);
+  const pkPct = m > 0 ? L.bvg/m*100 : 0;
+  return {m,n,jahr,alvBase,uvBase,bvk,bvgIn,koord,ag,sp,ri,row,pkAnJahr,pkAgJahr,pkPct,L,abz,netto,AG,agTot,kosten:m+agTot};
+}
+
+/* ---------- Zeilen-Definitionen mit Erklärung ---------- */
+const DEF = {
+  brutto:{name:"Bruttolohn", sub:"Monatslohn gemäss Arbeitsvertrag", col:"--g-net",
+    what:"Der vereinbarte Lohn vor allen Abzügen. Auf ihm werden die meisten Sozialversicherungsbeiträge berechnet.",
+    who:"Arbeitgeber zahlt", calc:c=>`Vertraglicher Monatslohn: Fr. ${fmt(c.m)}\nJahreslohn: ${fmt(c.m)} × ${c.n} = Fr. ${fmt(c.jahr)}`,
+    law:["Art. 322 Abs. 1 OR","Der Arbeitgeber schuldet den vereinbarten oder üblichen Lohn bzw. den Lohn gemäss Normal- oder Gesamtarbeitsvertrag."],
+    tip:"Ein 13. Monatslohn ist nur geschuldet, wenn er vereinbart ist. Er erhöht den Jahreslohn und damit die BVG-Beiträge."},
+  ahv:{name:"AHV", sub:"Alters- und Hinterlassenenversicherung", col:"--g-1", rate:()=>R.ahv,
+    what:"Finanziert die Altersrenten und die Renten für Witwen, Witwer und Waisen (1. Säule). Die AHV funktioniert im Umlageverfahren: Die heutigen Beiträge bezahlen die heutigen Renten.",
+    who:"Arbeitnehmer und Arbeitgeber je zur Hälfte (je 4,35 %)", base:"ganzer Bruttolohn, ohne Obergrenze",
+    calc:c=>`${fmt(c.m)} × 4,35 % = Fr. ${fmt(c.L.ahv)}`,
+    law:["Art. 5 Abs. 1 und Art. 13 AHVG","Auf dem massgebenden Lohn erheben Arbeitnehmer und Arbeitgeber je einen Beitrag von 4,35 %."],
+    tip:"Weil es keine Obergrenze gibt, zahlen hohe Löhne viel mehr ein, als sie später als Rente erhalten: Die AHV verteilt um."},
+  iv:{name:"IV", sub:"Invalidenversicherung", col:"--g-1", rate:()=>R.iv,
+    what:"Unterstützt Menschen, die wegen Krankheit oder Unfall nicht mehr oder nur teilweise arbeiten können: zuerst mit Eingliederungsmassnahmen, sonst mit einer Rente.",
+    who:"Arbeitnehmer und Arbeitgeber je zur Hälfte (je 0,7 %)", base:"ganzer Bruttolohn",
+    calc:c=>`${fmt(c.m)} × 0,7 % = Fr. ${fmt(c.L.iv)}`,
+    law:["Art. 3 IVG","Die IV-Beiträge werden in Prozenten des Erwerbseinkommens erhoben, zusammen mit den AHV-Beiträgen."],
+    tip:"IV-Grundsatz: «Eingliederung vor Rente»."},
+  eo:{name:"EO", sub:"Erwerbsersatzordnung", col:"--g-1", rate:()=>R.eo,
+    what:"Ersetzt einen Teil des Lohns bei Militär-, Zivil- und Schutzdienst sowie bei Mutterschaft und Vaterschaft (80 % des Lohns, mit Höchstbetrag).",
+    who:"Arbeitnehmer und Arbeitgeber je zur Hälfte (je 0,25 %)", base:"ganzer Bruttolohn",
+    calc:c=>`${fmt(c.m)} × 0,25 % = Fr. ${fmt(c.L.eo)}`,
+    law:["Art. 27 EOG","Die EO-Beiträge werden in Prozenten des massgebenden Lohns erhoben, zusammen mit den AHV-Beiträgen."],
+    tip:"AHV, IV und EO werden zusammen abgerechnet: 5,3 % vom Arbeitnehmer, 5,3 % vom Arbeitgeber."},
+  alv:{name:"ALV", sub:"Arbeitslosenversicherung", col:"--g-alv", rate:()=>R.alv,
+    what:"Zahlt Taggelder bei Arbeitslosigkeit (70 bis 80 % des versicherten Lohns), Kurzarbeit und Schlechtwetter sowie Kurse zur Wiedereingliederung.",
+    who:"Arbeitnehmer und Arbeitgeber je zur Hälfte (je 1,1 %)", base:"Lohn bis Fr. 148'200 pro Jahr; darüber kein Beitrag",
+    calc:c=>`Beitragspflichtiger Lohn: ${fmt(c.alvBase)}${c.alvBase<c.m?` (Obergrenze ${fmt(R.alvMax)} ÷ ${c.n})`:""}\n${fmt(c.alvBase)} × 1,1 % = Fr. ${fmt(c.L.alv)}`,
+    law:["Art. 3 AVIG","Der ALV-Beitrag wird vom massgebenden Lohn erhoben, aber nur bis zum Höchstbetrag des versicherten Verdienstes der Unfallversicherung (Fr. 148'200)."],
+    tip:"Seit 2023 gibt es keinen «Solidaritätsbeitrag» mehr auf Lohnteilen über Fr. 148'200."},
+  nbu:{name:"NBU", sub:"Nichtberufsunfallversicherung", col:"--g-uv", rate:()=>S.nbu,
+    what:"Versichert Unfälle in der Freizeit, etwa beim Sport oder im Haushalt (Heilungskosten und Taggeld). Obligatorisch ab 8 Arbeitsstunden pro Woche beim gleichen Arbeitgeber.",
+    who:"Arbeitnehmer (der Arbeitgeber darf freiwillig einen Teil übernehmen)", base:"Lohn bis Fr. 148'200 pro Jahr; Satz je nach Versicherer und Branche",
+    calc:c=>`${fmt(c.uvBase)} × ${pc(S.nbu)} = Fr. ${fmt(c.L.nbu)}`,
+    law:["Art. 91 Abs. 2 UVG","Die Prämien für Nichtberufsunfälle gehen zu Lasten des Arbeitnehmers; Abreden zu seinen Gunsten sind erlaubt."],
+    tip:"Wer bei der NBU versichert ist, kann die Unfalldeckung bei der Krankenkasse ausschliessen und so Prämie sparen."},
+  ktg:{name:"Krankentaggeld", sub:"Kollektive Taggeldversicherung", col:"--g-ktg", rate:()=>S.ktg,
+    what:"Zahlt bei Krankheit meist 80 % des Lohns während bis zu 730 Tagen. Gesetzlich nicht vorgeschrieben, aber in vielen Arbeits- und Gesamtarbeitsverträgen vereinbart.",
+    who:"Häufig je zur Hälfte (Beispielwert); der Arbeitnehmeranteil darf höchstens die Hälfte der Prämie sein", base:"Bruttolohn; Satz je nach Versicherungsvertrag",
+    calc:c=>`${fmt(c.m)} × ${pc(S.ktg)} = Fr. ${fmt(c.L.ktg)}`,
+    law:["Art. 324a OR","Bei Krankheit muss der Arbeitgeber den Lohn für eine beschränkte Zeit weiterzahlen. Eine Taggeldversicherung darf diese Pflicht ersetzen, wenn sie für den Arbeitnehmer mindestens gleichwertig ist und dieser höchstens die Hälfte der Prämie trägt."],
+    tip:"Ohne Taggeldversicherung muss der Arbeitgeber den Lohn bei Krankheit nur beschränkt weiterzahlen, im ersten Dienstjahr drei Wochen (Art. 324a OR, Skalen)."},
+  bvg:{name:"Pensionskasse", sub:()=>S.plan==="bvk"?"2. Säule, BVK Kanton Zürich, Plan Standard":"2. Säule, gesetzliches Minimum (BVG)", col:"--g-bvg", rate:null,
+    what:"Spart für die eigene Altersrente (Kapitaldeckungsverfahren) und versichert Invalidität und Tod. Zusammen mit der AHV soll sie die gewohnte Lebenshaltung ermöglichen.",
+    who:()=>S.plan==="bvk"?"Arbeitnehmer und Arbeitgeber; bei der BVK trägt der Arbeitgeber rund 60 %":"Arbeitnehmer und Arbeitgeber je zur Hälfte (Arbeitgeber mindestens die Hälfte)",
+    base:()=>S.plan==="bvk"?"versicherter Lohn = Jahreslohn minus Koordinationsabzug Fr. 26'460, ohne Obergrenze von Fr. 64'260":"koordinierter Lohn = Jahreslohn minus Fr. 26'460, mindestens Fr. 3'780, höchstens Fr. 64'260",
+    calc:c=>{
+      if(!c.bvgIn){
+        const why = c.jahr < R.bvgMin ? `Jahreslohn Fr. ${fmt(c.jahr)} liegt unter der Eintrittsschwelle von Fr. 22'680.` : S.alter > 65 ? "Das ordentliche Rentenalter ist erreicht." : `Die Versicherung beginnt erst ab Alter ${c.bvk?18:17}.`;
+        return `${why}\nKein Pensionskassenabzug.`;
+      }
+      const lohnBasis = c.bvk ? Math.min(c.jahr,R.lohnMax) : Math.min(c.jahr,R.koord+R.kMax);
+      const grenz = c.koord===R.kMin?" (Minimum)":(!c.bvk && c.koord===R.kMax)?" (Maximum)":"";
+      const stufe = c.bvk ? `Altersstufe ${c.row[0]}–${c.row[1]} (Alter ${S.alter}), Sätze aus der Tabelle unten` : `Alter ${S.alter}: Altersgutschrift ${c.ag} % und Risikobeitrag ${pc(S.risk,1)}, je zur Hälfte`;
+      return `1. Versicherter Lohn pro Jahr\n   ${fmt(lohnBasis)} − 26'460 = Fr. ${fmt(c.koord)}${grenz}\n`+
+        `2. ${stufe}\n`+
+        `3. Beiträge pro Jahr in Franken\n`+
+        `   Sparbeitrag AN: ${fmt(c.koord)} × ${pc(c.sp.anPct,2)} = ${fmt(c.sp.an)}\n`+
+        `   Risikobeitrag AN: ${fmt(c.koord)} × ${pc(c.ri.anPct,2)} = ${fmt(c.ri.an)}\n`+
+        `   Arbeitnehmer total: Fr. ${fmt(c.pkAnJahr)}\n`+
+        `   Arbeitgeber total: ${fmt(c.sp.ag)} + ${fmt(c.ri.ag)} = Fr. ${fmt(c.pkAgJahr)}\n`+
+        `4. Abzug pro Monat (12 Abzüge)\n   ${fmt(c.pkAnJahr)} ÷ 12 = Fr. ${fmt(c.L.bvg)}\n`+
+        `5. Anteil am Bruttolohn\n   ${fmt(c.L.bvg)} ÷ ${fmt(c.m)} = ${pc(c.pkPct,2)}`;
+    },
+    extra:c=>{
+      if(c.bvk){
+        let t = `<div class="tabbox"><table class="ptab"><thead><tr><th>Alter</th><th>Spar AN</th><th>Spar AG</th><th>Risiko AN</th><th>Risiko AG</th><th>Total</th></tr></thead><tbody>`;
+        for(const r of BVK){ const cur = S.alter>=r[0]&&S.alter<=r[1];
+          t += `<tr${cur?' class="cur"':""}><td>${r[0]}–${r[1]}</td><td>${r[2]?pc(r[2],1):"–"}</td><td>${r[3]?pc(r[3],1):"–"}</td><td>0,8 %</td><td>1,2 %</td><td>${pc(r[2]+r[3]+2,1)}</td></tr>`; }
+        return t + `</tbody></table></div><p class="hint">BVK Vorsorgeplan Standard ab 1.1.2026, in % des versicherten Lohns.</p>`;
+      }
+      let t = `<div class="tabbox"><table class="ptab"><thead><tr><th>Alter</th><th>Altersgutschrift</th><th>davon AN</th><th>davon AG</th></tr></thead><tbody>`;
+      t += `<tr${S.alter>=17&&S.alter<25?' class="cur"':""}><td>17–24</td><td>–</td><td>–</td><td>–</td></tr>`;
+      for(const r of BVG_TAB){ const cur = S.alter>=r[0]&&S.alter<=r[1];
+        t += `<tr${cur?' class="cur"':""}><td>${r[0]}–${r[1]}</td><td>${r[2]} %</td><td>${pc(r[2]/2,1)}</td><td>${pc(r[2]/2,1)}</td></tr>`; }
+      return t + `</tbody></table></div><p class="hint">Altersgutschriften nach Art. 16 BVG in % des koordinierten Lohns. Dazu kommt ein Risikobeitrag (hier ${pc(S.risk,1)}, Beispielwert, unter «Weitere Sätze» einstellbar).</p>`;
+    },
+    law:["Art. 66 Abs. 1 BVG","Die Pensionskasse legt die Beiträge im Reglement fest. Der Arbeitgeber muss mindestens gleich viel bezahlen wie alle seine Arbeitnehmer zusammen."],
+    tip:()=>S.plan==="bvk"?"Die BVK versichert mehr als das gesetzliche Minimum: höhere Sparbeiträge, den ganzen Lohn über dem Koordinationsabzug und einen höheren Arbeitgeberanteil. Deshalb ist auch der Abzug auf der Lohnabrechnung grösser.":"Die Prozentsätze der Pensionskasse beziehen sich auf den versicherten (koordinierten) Lohn, nicht auf den Bruttolohn. Deshalb wird zuerst in Franken gerechnet und erst am Schluss der Anteil am Bruttolohn bestimmt."},
+  netto:{name:"Nettolohn", sub:"Auszahlung auf das Konto", col:"--g-net",
+    what:"Der Betrag, der ausbezahlt wird. Davon müssen noch Steuern, Krankenkassenprämien, Miete usw. bezahlt werden. Steuern werden in der Schweiz (ausser bei der Quellensteuer) nicht vom Lohn abgezogen.",
+    who:"", calc:c=>`${fmt(c.m)} − ${fmt(c.abz)} = Fr. ${fmt(c.netto)}\nAbzüge total: ${pc(c.abz/c.m*100,1)} des Bruttolohns`,
+    law:["Art. 323b Abs. 1 OR","Der Lohn ist in Franken auszuzahlen, und der Arbeitnehmer erhält eine schriftliche Abrechnung."],
+    tip:"Faustregel: Der Nettolohn beträgt rund 85 bis 88 % des Bruttolohns. Junge Arbeitnehmende haben weniger Abzüge, weil die Altersgutschrift im BVG erst mit 25 beginnt."},
+  ag:{name:"Arbeitgeberbeiträge", sub:"erscheinen nicht auf der Abrechnung", col:"--g-ag",
+    what:"Der Arbeitgeber zahlt zusätzlich zum Bruttolohn eigene Beiträge. Sie zählen zu den Lohnkosten der Firma, aber nicht zum Lohn.",
+    who:"nur Arbeitgeber",
+    calc:c=>`AHV/IV/EO 5,3 %: ${fmt(c.AG.ahvivEo)}\nALV 1,1 %: ${fmt(c.AG.alv)}\nFamilienausgleichskasse ${pc(R.fak,3)}: ${fmt(c.AG.fak)}\nVerwaltungskosten Ausgleichskasse: ${fmt(c.AG.vk)}\nBerufsunfall ${pc(S.bu)}: ${fmt(c.AG.bu)}\nKrankentaggeld: ${fmt(c.AG.ktg)}\nPensionskasse: ${fmt(c.AG.bvg)}\nTotal: Fr. ${fmt(c.agTot)}`,
+    law:["Art. 91 Abs. 1 UVG","Die Prämien für Berufsunfälle und Berufskrankheiten trägt der Arbeitgeber allein."],
+    tip:"Die Familienzulagen werden im Kanton Zürich allein vom Arbeitgeber finanziert (Familienausgleichskasse)."}
+};
+
+let sel = "ahv";
+const val = v => typeof v === "function" ? v() : v;
+function rowBtn(key, c, amount, opts={}){
+  const d = DEF[key];
+  const rate = opts.rate ?? (d.rate ? pc(d.rate()) : "");
+  return `<button type="button" class="row ${opts.cls||""}" data-k="${key}" aria-pressed="${sel===key}">
+    <span class="dot" style="background:var(${d.col})"></span>
+    <span class="name">${d.name}<small>${val(d.sub)}</small></span>
+    <span class="rate">${rate}</span>
+    <span class="amt">${amount}</span></button>`;
+}
+function render(){
+  const c = compute();
+  $("slipMeta").innerHTML = `Alter ${S.alter} · ${c.n} Monatslöhne<br>Jahreslohn Fr. <span class="num">${fmt(c.jahr,0)}</span>`;
+  const bvgRate = c.bvgIn ? pc(c.pkPct,2) : "–";
+  let h = rowBtn("brutto",c,fmt(c.m),{cls:"sub",rate:""});
+  h += `<div class="cap">Abzüge Sozialversicherungen</div>`;
+  for(const k of ["ahv","iv","eo","alv","nbu","ktg"]) h += rowBtn(k,c,fmt(-c.L[k]));
+  h += rowBtn("bvg",c,fmt(-c.L.bvg),{rate:bvgRate});
+  h += rowBtn("netto",c,fmt(c.netto),{cls:"sum",rate:pc(c.netto/c.m*100,1)});
+  h += `<div class="sep"></div><div class="cap">Zusätzlich vom Arbeitgeber bezahlt</div>`;
+  h += rowBtn("ag",c,fmt(c.agTot),{rate:""});
+  $("rows").innerHTML = h;
+  $("rows").querySelectorAll(".row").forEach(b=>b.addEventListener("click",()=>{sel=b.dataset.k;render();}));
+
+  // Erklärung
+  const d = DEF[sel];
+  let e = `<h2><span class="dot" style="background:var(${d.col})"></span>${d.name}</h2><p class="muted" style="margin-top:-6px">${val(d.sub)}</p><p>${d.what}</p><dl class="facts">`;
+  if(d.who) e += `<dt>Wer zahlt</dt><dd>${val(d.who)}</dd>`;
+  if(d.base) e += `<dt>Basis</dt><dd>${val(d.base)}</dd>`;
+  e += `</dl><div class="calcbox">${d.calc(c)}</div>`;
+  if(d.extra) e += d.extra(c);
+  if(d.law) e += `<div class="law"><span class="src">${d.law[0]} <span class="muted" style="font-weight:400">(sinngemäss)</span></span>${d.law[1]}</div>`;
+  if(d.tip) e += `<div class="tip">${val(d.tip)}</div>`;
+  $("explain").innerHTML = e;
+
+  // Kennzahlen
+  $("kpis").innerHTML =
+    `<div class="kpi"><span class="k">Bruttolohn</span><span class="v">${fmt(c.m)}</span><span class="s">pro Monat</span></div>`+
+    `<div class="kpi"><span class="k">Abzüge</span><span class="v">${fmt(c.abz)}</span><span class="s">${pc(c.abz/c.m*100,1)} des Bruttolohns</span></div>`+
+    `<div class="kpi"><span class="k">Nettolohn</span><span class="v">${fmt(c.netto)}</span><span class="s">pro Jahr ${fmt(c.netto*c.n,0)}</span></div>`+
+    `<div class="kpi"><span class="k">Lohnkosten Firma</span><span class="v">${fmt(c.kosten)}</span><span class="s">${pc(c.kosten/c.m*100,1)} des Bruttolohns</span></div>`;
+
+  // Balken
+  const segs = [
+    ["netto",c.netto,"Nettolohn"],["ahv",c.L.ahv+c.L.iv+c.L.eo,"AHV/IV/EO"],["alv",c.L.alv,"ALV"],["nbu",c.L.nbu,"NBU"],["ktg",c.L.ktg,"Krankentaggeld"],["bvg",c.L.bvg,"Pensionskasse"]
+  ];
+  const total = c.kosten;
+  const bar = (items) => items.map(([k,v,l])=>`<button type="button" data-k="${k}" style="width:${v/total*100}%;background:var(${DEF[k].col})" title="${l}: Fr. ${fmt(v)}" aria-label="${l}: Fr. ${fmt(v)}"></button>`).join("");
+  $("bars").innerHTML =
+    `<div class="barline"><div class="lab"><b>Was die Arbeitnehmerin erhält</b><span class="num">Brutto Fr. ${fmt(c.m)}</span></div><div class="stack">${bar(segs)}</div></div>`+
+    `<div class="barline"><div class="lab"><b>Was die Firma bezahlt</b><span class="num">Lohnkosten Fr. ${fmt(c.kosten)}</span></div><div class="stack">${bar([...segs,["ag",c.agTot,"Arbeitgeberbeiträge"]])}</div></div>`;
+  $("bars").querySelectorAll("button[data-k]").forEach(b=>b.addEventListener("click",()=>{sel=b.dataset.k;render();$("explain").scrollIntoView({behavior:"smooth",block:"nearest"});}));
+  $("legend").innerHTML = [...segs,["ag",c.agTot,"Arbeitgeberbeiträge"]].map(([k,v,l])=>`<span><span class="sw" style="background:var(${DEF[k].col})"></span>${l} <span class="num">${fmt(v)}</span></span>`).join("");
+}
+
+/* ---------- Eingaben ---------- */
+function sync(){ $("brutto").value=S.brutto; $("bruttoR").value=Math.min(Math.max(S.brutto,500),16000); $("alter").value=S.alter; $("alterR").value=Math.min(Math.max(S.alter,16),65);
+  $("plan").value=S.plan; $("riskField").hidden = S.plan!=="bvg";
+  $("ml13").checked=S.ml13; $("nbu").value=S.nbu; $("ktg").value=S.ktg; $("risk").value=S.risk; $("bu").value=S.bu; }
+const nv = (v,min,max) => { const n=Number(v); return isFinite(n) ? Math.min(max,Math.max(min,n)) : min; };
+$("brutto").addEventListener("input",e=>{S.brutto=nv(e.target.value,0,100000);$("bruttoR").value=Math.min(Math.max(S.brutto,500),16000);render();});
+$("bruttoR").addEventListener("input",e=>{S.brutto=nv(e.target.value,0,100000);$("brutto").value=S.brutto;render();});
+$("alter").addEventListener("input",e=>{S.alter=Math.round(nv(e.target.value,14,80));$("alterR").value=Math.min(Math.max(S.alter,16),65);render();});
+$("alterR").addEventListener("input",e=>{S.alter=Math.round(nv(e.target.value,14,80));$("alter").value=S.alter;render();});
+$("ml13").addEventListener("change",e=>{S.ml13=e.target.checked;render();});
+$("plan").addEventListener("change",e=>{S.plan=e.target.value;$("riskField").hidden=S.plan!=="bvg";sel="bvg";render();});
+for(const k of ["nbu","ktg","risk","bu"]) $(k).addEventListener("input",e=>{S[k]=nv(e.target.value,0,10);render();});
+
+function setVariant(v){ root.dataset.variant=v; $("va").setAttribute("aria-pressed",v==="a"); $("vb").setAttribute("aria-pressed",v==="b"); try{localStorage.setItem("lohnabrechnung-variant",v);}catch(e){} }
+$("va").addEventListener("click",()=>setVariant("a")); $("vb").addEventListener("click",()=>setVariant("b"));
+let saved="a"; try{ saved=localStorage.getItem("lohnabrechnung-variant")||"a"; }catch(e){}
+setVariant(saved==="b"?"b":"a");
+$("beamerBtn").addEventListener("click",()=>{ const on=!root.classList.contains("beamer"); root.classList.toggle("beamer",on); $("beamerBtn").setAttribute("aria-pressed",on); $("beamerBtn").textContent=on?"Beamer-Modus beenden":"Beamer-Modus"; });
+
+sync(); render();
+})();
+</script>
+
+</body></html>

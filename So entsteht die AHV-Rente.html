@@ -1,0 +1,460 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!-- Entscheidungen:
+Einsatztyp: Lernmaterial EWR/Recht für Schüler:innen, Gerät gemischt (Laptop und Handy).
+Funktion: Rechner + Schritte. Einzelperson oder Ehepaar; Durchschnittseinkommen, Beitragslücken, Jahre ohne Erwerb (Mindestbeitrag),
+  Jahre mit Kindern unter 16 einstellbar. Herleitung in 6 Schritten: Beitragsjahre → massgebendes Einkommen (inkl. Erziehungsgutschriften, Splitting)
+  → Vollrente (Rentenformel, Skala 44) → Teilrente → Plafonierung (Ehepaar) → Jahresrente mit 13. AHV-Rente. Zusatz: Einzahlung vs. Auszahlung.
+Werte 2026: Minimalrente 1'260, Maximalrente 2'520, Einkommensstufen 1'512 (Skala 44, unverändert seit 1.1.2025), volle Beitragsdauer 44 Jahre,
+  Erziehungsgutschrift 45'360 (3 × jährliche Minimalrente), Plafonierung 150 % = 3'780, Mindestbeitrag Nichterwerbstätige 530, AHV-Beitrag 8,7 % (AN + AG).
+  Rentenformel aus der Skala 44 nachgerechnet: bis 45'360: 0,74 × 1'260 + 0,26 × E/12; darüber 1,04 × 1'260 + 0,16 × E/12; begrenzt auf 1'260–2'520.
+Vereinfachungen: Einkommen in heutigen Franken (Aufwertungsfaktor 1), Ehepaar während aller Beitragsjahre verheiratet, keine Jugend- und Zusatzjahre,
+  kein Vorbezug/Aufschub, Teilrente = Vollrente × Beitragsjahre ÷ 44.
+Datenhaltung: keine. Kein Export.
+Design: eine Variante, EWR freundlich-lebendig: Nord-Palette, Open Sans + Google Sans Code für Beträge, Überschriften 700, runde Karten,
+  Aurora-Farben für die Bausteine (Erwerb, Gutschriften, Lücken). Hell/Dunkel folgt System.
+-->
+<title>So entsteht die AHV-Rente</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400;600&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: Kopf mit Ergebnis, Eingabekarte, dann sechs nummerierte Herleitungsschritte untereinander, zum Schluss Einzahlung vs. Auszahlung. */
+:root{
+  --nord0:#2E3440;--nord1:#3B4252;--nord2:#434C5E;--nord3:#4C566A;--nord4:#D8DEE9;--nord5:#E5E9F0;--nord6:#ECEFF4;
+  --nord7:#8FBCBB;--nord8:#88C0D0;--nord9:#81A1C1;--nord10:#5E81AC;--nord11:#BF616A;--nord12:#D08770;--nord13:#EBCB8B;--nord14:#A3BE8C;--nord15:#B48EAD;
+  --bg:var(--nord6);--surface:#fff;--surface-2:var(--nord5);--line:var(--nord4);--text:var(--nord0);--muted:var(--nord3);
+  --accent:var(--nord10);--accent-soft:var(--nord9);
+  --c-work:var(--nord10);--c-edu:var(--nord14);--c-none:var(--nord13);--c-gap:var(--nord11);--c-rent:var(--nord15);--c-pay:var(--nord12);
+  --radius:16px;--radius-sm:10px;--shadow:0 1px 2px rgba(46,52,64,.06),0 6px 18px rgba(46,52,64,.07);
+  --font:"Open Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"Google Sans Code",ui-monospace,"Cascadia Code",Consolas,"SF Mono",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--bg:var(--nord0);--surface:var(--nord1);--surface-2:var(--nord2);--line:var(--nord2);--text:var(--nord6);--muted:var(--nord4);--accent:var(--nord8);--shadow:none;color-scheme:dark}
+}
+:root[data-theme="dark"]{--bg:var(--nord0);--surface:var(--nord1);--surface-2:var(--nord2);--line:var(--nord2);--text:var(--nord6);--muted:var(--nord4);--accent:var(--nord8);--shadow:none;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:17px;line-height:1.6;margin:0}
+.wrap{max-width:1100px;margin:0 auto;padding-block:22px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:22px}
+h1,h2,h3{text-wrap:balance;line-height:1.25;margin:0}
+h1{font-size:2rem;font-weight:700}
+h2{font-size:1.4rem;font-weight:700}
+h3{font-size:1rem;font-weight:600}
+p{margin:0;max-width:70ch}
+.muted{color:var(--muted)}
+.num,.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+a{color:var(--accent);text-decoration:underline}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
+.card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;display:flex;flex-direction:column;gap:14px;min-width:0}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .card{border:1px solid var(--nord2)}}
+:root[data-theme="dark"] .card{border:1px solid var(--nord2)}
+
+/* Kopf */
+.hero{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:22px;align-items:end}
+@media (max-width:800px){.hero{grid-template-columns:minmax(0,1fr)}}
+.eyebrow{font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.result{background:var(--nord0);color:var(--nord6);border-radius:var(--radius);padding:20px 22px;display:flex;flex-direction:column;gap:4px}
+.result .k{font-size:.85rem;color:var(--nord4);font-weight:600}
+.result .v{font-family:var(--font-mono);font-size:2.4rem;font-weight:600;line-height:1.1}
+.result .s{font-size:.9rem;color:var(--nord4)}
+.result .row2{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:6px;font-size:.92rem}
+.result .row2 b{font-family:var(--font-mono)}
+
+/* Eingaben */
+.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px 22px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label,.legend{font-weight:600;font-size:.9rem}
+.inrow{display:flex;gap:6px;align-items:center}
+.inrow input{width:100%;min-width:0;padding:6px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg);font-family:var(--font-mono)}
+.unit{color:var(--muted);font-size:.88rem;flex:none}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--bg);width:max-content;max-width:100%}
+.seg button{border:0;background:transparent;padding:6px 14px;cursor:pointer;font-size:.92rem}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--bg);font-weight:600}
+.person{border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.person h3{display:flex;gap:8px;align-items:center}
+.persons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.persons.single{grid-template-columns:minmax(0,1fr)}
+@media (max-width:720px){.persons{grid-template-columns:minmax(0,1fr)}}
+.hint{font-size:.84rem;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:4px 12px;cursor:pointer;font-size:.88rem}
+.chip:hover{border-color:var(--accent)}
+
+/* Schritte */
+.step{display:grid;grid-template-columns:2.6rem minmax(0,1fr);gap:4px 16px}
+.step .no{width:2.4rem;height:2.4rem;border-radius:50%;background:var(--accent);color:var(--bg);display:grid;place-items:center;font-family:var(--font-mono);font-weight:600;font-size:1.05rem}
+.step .body{display:flex;flex-direction:column;gap:12px;min-width:0}
+.calc{font-family:var(--font-mono);font-size:.92rem;background:var(--surface-2);border-radius:var(--radius-sm);padding:10px 14px;white-space:pre-wrap;overflow-x:auto}
+.law{border:2px solid var(--nord10);border-radius:var(--radius-sm);padding:10px 14px;font-size:.93rem}
+.law .src{font-weight:700;color:var(--accent);display:block;margin-bottom:2px}
+.merke{border-radius:var(--radius-sm);padding:10px 14px;background:color-mix(in srgb,var(--nord15) 18%,var(--surface));font-size:.95rem}
+.merke b{display:block}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:720px){.two{grid-template-columns:minmax(0,1fr)}}
+.who{font-size:.8rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+
+/* Jahresstreifen */
+.years{display:grid;grid-template-columns:repeat(44,minmax(0,1fr));gap:2px}
+.years span{height:26px;border-radius:3px}
+.yaxis{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);font-family:var(--font-mono)}
+.legendrow{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.86rem;color:var(--muted)}
+.sw{display:inline-block;width:.85em;height:.85em;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.sw.gap{background:repeating-linear-gradient(45deg,var(--c-gap) 0 3px,transparent 3px 6px);border:1px solid var(--c-gap)}
+.years span.gap{background:repeating-linear-gradient(45deg,color-mix(in srgb,var(--c-gap) 70%,transparent) 0 3px,transparent 3px 6px);outline:1px solid var(--c-gap);outline-offset:-1px}
+
+/* Summenbalken */
+.stack{display:flex;height:30px;border-radius:var(--radius-sm);overflow:hidden;background:var(--surface-2)}
+.stack span{height:100%;transition:width .3s ease}
+
+/* Diagramm */
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font-family:var(--font);font-size:12px}
+.chart .lbl{fill:var(--text);font-weight:600}
+.chart .grid line{stroke:var(--line)}
+
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:640px){.kpis{grid-template-columns:minmax(0,1fr)}}
+.kpi{background:var(--surface-2);border-radius:var(--radius-sm);padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi .k{font-size:.82rem;color:var(--muted);font-weight:600}
+.kpi .v{font-family:var(--font-mono);font-size:1.35rem;font-weight:600}
+.kpi .s{font-size:.82rem;color:var(--muted)}
+.foot{font-size:.84rem;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+@media (prefers-reduced-motion: reduce){.stack span{transition:none}}
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+      <span class="eyebrow">EWR · Altersvorsorge · 1. Säule · Stand 2026</span>
+      <h1>So entsteht die AHV-Rente</h1>
+      <p class="muted">Die AHV-Rente hängt nicht davon ab, wie viel Geld man einbezahlt hat, sondern von zwei Grössen: den Beitragsjahren und dem durchschnittlichen Einkommen. Verschieben Sie die Regler und verfolgen Sie die sechs Schritte.</p>
+    </div>
+    <div class="result" aria-live="polite">
+      <span class="k" id="resK">Monatliche Altersrente</span>
+      <span class="v" id="resV"></span>
+      <span class="s" id="resS"></span>
+      <div class="row2" id="resRow"></div>
+    </div>
+  </header>
+
+  <section class="card" aria-label="Eingaben">
+    <div style="display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between">
+      <div class="seg" role="group" aria-label="Situation">
+        <button type="button" id="mSingle" aria-pressed="true">Einzelperson</button>
+        <button type="button" id="mCouple" aria-pressed="false">Ehepaar</button>
+      </div>
+      <div class="chips" aria-label="Beispiele">
+        <span class="hint" style="align-self:center">Beispiele:</span>
+        <button type="button" class="chip" data-ex="voll">Vollzeit, keine Lücken</button>
+        <button type="button" class="chip" data-ex="ausland">5 Jahre im Ausland</button>
+        <button type="button" class="chip" data-ex="teilzeit">Teilzeit mit Kindern</button>
+        <button type="button" class="chip" data-ex="paar">Ehepaar</button>
+      </div>
+    </div>
+    <div class="persons single" id="persons"></div>
+    <div class="inputs">
+      <div class="field">
+        <label for="kids">Jahre mit Kindern unter 16</label>
+        <div class="inrow"><input type="number" id="kids" min="0" max="44" step="1" inputmode="numeric"><span class="unit">Jahre</span></div>
+        <input type="range" id="kidsR" min="0" max="30" step="1" aria-label="Jahre mit Kindern, Regler">
+      </div>
+    </div>
+    <p class="hint">Einkommen in heutigen Franken (Durchschnitt über die Jahre mit Erwerbstätigkeit). Volle Beitragsdauer: 44 Jahre, vom 1. Januar nach dem 20. Geburtstag bis zum Referenzalter 65.</p>
+  </section>
+
+  <section class="card step" aria-labelledby="h1s">
+    <span class="no">1</span>
+    <div class="body">
+      <h2 id="h1s">Beitragsjahre zählen</h2>
+      <p>Jedes Jahr, in dem man AHV-Beiträge bezahlt hat, ist ein Beitragsjahr: als Angestellte (8,7 % vom Lohn, je zur Hälfte mit dem Arbeitgeber), als Selbständige oder als Nichterwerbstätige mit mindestens Fr. 530 pro Jahr. Fehlt ein Jahr, entsteht eine Beitragslücke.</p>
+      <div id="yearsBox"></div>
+      <div class="legendrow"><span><span class="sw" style="background:var(--c-work)"></span>mit Erwerbseinkommen</span><span><span class="sw" style="background:var(--c-none)"></span>ohne Erwerb, Mindestbeitrag bezahlt</span><span><span class="sw gap"></span>Beitragslücke</span></div>
+      <div class="calc" id="c1"></div>
+      <div class="law"><span class="src">Art. 29<sup>ter</sup> AHVG (sinngemäss)</span>Die Beitragsdauer ist vollständig, wenn jemand vom 1. Januar nach dem 20. Geburtstag bis zum Referenzalter jedes Jahr Beiträge bezahlt hat, also 44 Jahre lang.</div>
+    </div>
+  </section>
+
+  <section class="card step" aria-labelledby="h2s">
+    <span class="no">2</span>
+    <div class="body">
+      <h2 id="h2s">Massgebendes durchschnittliches Jahreseinkommen</h2>
+      <p>Alle Erwerbseinkommen werden zusammengezählt, dazu kommen Erziehungsgutschriften für Jahre mit Kindern unter 16. Die Summe wird durch die Anzahl Beitragsjahre geteilt. Bei Ehepaaren werden die Einkommen aus den Ehejahren halbiert und jedem Partner zur Hälfte gutgeschrieben (Splitting).</p>
+      <div id="sumBox"></div>
+      <div class="legendrow"><span><span class="sw" style="background:var(--c-work)"></span>Erwerbseinkommen</span><span><span class="sw" style="background:var(--c-edu)"></span>Erziehungsgutschriften</span></div>
+      <div class="two" id="c2"></div>
+      <div class="law"><span class="src">Art. 29<sup>quater</sup>, 29<sup>quinquies</sup> und 29<sup>sexies</sup> AHVG (sinngemäss)</span>Das durchschnittliche Jahreseinkommen setzt sich aus den Erwerbseinkommen sowie den Erziehungs- und Betreuungsgutschriften zusammen. Einkommen von Ehepaaren aus den Ehejahren werden geteilt. Die Erziehungsgutschrift entspricht der dreifachen jährlichen Minimalrente (Fr. 45'360) und wird bei Ehepaaren hälftig aufgeteilt.</div>
+    </div>
+  </section>
+
+  <section class="card step" aria-labelledby="h3s">
+    <span class="no">3</span>
+    <div class="body">
+      <h2 id="h3s">Vollrente nach der Rentenformel</h2>
+      <p>Aus dem durchschnittlichen Einkommen ergibt sich die Rente bei voller Beitragsdauer. Die Formel hat einen Knick bei Fr. 45'360: Darunter steigt die Rente stark, darüber flacher. Unter Fr. 15'120 gibt es die Minimalrente, ab Fr. 90'720 die Maximalrente.</p>
+      <svg class="chart" id="formula" viewBox="0 0 680 290" role="img" aria-labelledby="h3s"></svg>
+      <div class="legendrow"><span><span class="sw" style="background:var(--c-work)"></span>Vollrente (44 Beitragsjahre)</span><span><span class="sw" style="background:var(--c-rent)"></span>Ihre Teilrente bei Lücken</span></div>
+      <div class="two" id="c3"></div>
+      <div class="law"><span class="src">Art. 34 AHVG (sinngemäss, auf Monatsbeträge umgerechnet)</span>Die Vollrente besteht aus einem festen und einem variablen Teil. Bis Fr. 45'360: 0,74 × 1'260 + 0,26 × Einkommen ÷ 12. Darüber: 1,04 × 1'260 + 0,16 × Einkommen ÷ 12. Sie beträgt mindestens Fr. 1'260 und höchstens Fr. 2'520 (Skala 44, Einkommensstufen zu Fr. 1'512).</div>
+    </div>
+  </section>
+
+  <section class="card step" aria-labelledby="h4s">
+    <span class="no">4</span>
+    <div class="body">
+      <h2 id="h4s">Teilrente bei Beitragslücken</h2>
+      <p>Wer weniger als 44 Beitragsjahre hat, erhält eine Teilrente. Jedes fehlende Jahr kürzt die Rente um 1/44, also um rund 2,3 %, und zwar ein Leben lang. Das gilt auch für die Minimal- und Maximalrente.</p>
+      <div class="two" id="c4"></div>
+      <div class="law"><span class="src">Art. 38 AHVG (sinngemäss)</span>Die Teilrente entspricht dem Verhältnis zwischen den vollen Beitragsjahren der Person und denen ihres Jahrgangs.</div>
+      <div class="merke"><b>Lücken vermeiden</b>Fehlende Beiträge können nur für die letzten fünf Jahre nachbezahlt werden. Wer studiert, im Ausland lebt oder nicht erwerbstätig ist, sollte den Mindestbeitrag bezahlen. Den Stand zeigt der individuelle Kontoauszug (IK-Auszug) der Ausgleichskasse.</div>
+    </div>
+  </section>
+
+  <section class="card step" aria-labelledby="h5s">
+    <span class="no">5</span>
+    <div class="body">
+      <h2 id="h5s">Ehepaare: Plafonierung</h2>
+      <p>Bei Ehepaaren dürfen die beiden Renten zusammen höchstens 150 % der Maximalrente betragen, also Fr. 3'780 pro Monat. Liegen sie darüber, werden beide Renten im gleichen Verhältnis gekürzt.</p>
+      <div class="calc" id="c5"></div>
+      <div class="law"><span class="src">Art. 35 AHVG (sinngemäss)</span>Die Summe der beiden Renten eines Ehepaares beträgt höchstens 150 % des Höchstbetrages der Altersrente.</div>
+    </div>
+  </section>
+
+  <section class="card step" aria-labelledby="h6s">
+    <span class="no">6</span>
+    <div class="body">
+      <h2 id="h6s">Jahresrente mit der 13. AHV-Rente</h2>
+      <p>Seit 2026 wird jedes Jahr im Dezember eine 13. Altersrente ausbezahlt. Sie entspricht einem Zwölftel der Jahresrente, also einer zusätzlichen Monatsrente. Volk und Stände haben sie am 3. März 2024 angenommen.</p>
+      <div class="calc" id="c6"></div>
+      <div class="kpis" id="kpis"></div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="h7s">
+    <h2 id="h7s">Eingezahlt und ausbezahlt</h2>
+    <p>Die AHV ist eine Umlageversicherung: Die Beiträge der heutigen Erwerbstätigen bezahlen die heutigen Renten. Wer viel verdient, zahlt deutlich mehr ein, als er später erhält. Wer wenig verdient, erhält mehr, als er einbezahlt hat.</p>
+    <svg class="chart" id="flow" viewBox="0 0 680 150" role="img" aria-label="Vergleich Beiträge und Renten"></svg>
+    <p class="hint">Beiträge: 8,7 % des Erwerbseinkommens (Arbeitnehmer und Arbeitgeber zusammen) oder Mindestbeitrag, in heutigen Franken. Renten: 13 Monatsrenten pro Jahr während 20 Jahren (ungefähre Lebenserwartung mit 65). Ohne Zinsen, Teuerung und Bundesbeitrag.</p>
+  </section>
+
+  <footer class="foot">
+    <span>Werte 2026: Minimalrente Fr. 1'260, Maximalrente Fr. 2'520, Plafond Ehepaar Fr. 3'780, Erziehungsgutschrift Fr. 45'360, Mindestbeitrag Nichterwerbstätige Fr. 530. Quellen: <a href="https://www.ahv-iv.ch/Portals/0/adam/AHV-IV/8SvWAfGT_kCZJNivxn3o_w/Document/Monatliche%20Vollrenten,%20Skala%2044%2013.pdf" target="_blank" rel="noopener">AHV/IV, Monatliche Vollrenten Skala 44</a>, <a href="https://niora.ch/ratgeber/ahv-rente-berechnen" target="_blank" rel="noopener">niora, AHV-Rente berechnen 2026</a>.</span>
+    <span>Vereinfacht: Einkommen in heutigen Franken (ohne Aufwertungsfaktor), Ehepaar während aller Beitragsjahre verheiratet, ohne Jugend- und Zusatzjahre, Betreuungsgutschriften, Vorbezug oder Aufschub. Verbindlich ist nur die Berechnung der Ausgleichskasse. Gesetzesartikel sinngemäss.</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+const $ = id => document.getElementById(id);
+const R0 = 1260, RMAX = 2520, STEP = 1512, EGS = 45360, MINB = 530, FULL = 44, PLAF = 3780, AHV = 0.087, YEARS_RENT = 20;
+const S = { couple:false, kids:0, p:[{inc:70000, gap:0, none:0},{inc:45000, gap:0, none:0}] };
+const EX = {
+  voll:{couple:false, kids:0, p:[{inc:80000,gap:0,none:0},{inc:45000,gap:0,none:0}]},
+  ausland:{couple:false, kids:0, p:[{inc:80000,gap:5,none:0},{inc:45000,gap:0,none:0}]},
+  teilzeit:{couple:false, kids:12, p:[{inc:38000,gap:0,none:4},{inc:45000,gap:0,none:0}]},
+  paar:{couple:true, kids:14, p:[{inc:95000,gap:0,none:0},{inc:30000,gap:2,none:3}]}
+};
+
+const fmt = (n,d=0) => { const neg=n<0; const s=(Math.round(Math.abs(n)*10**d)/10**d).toFixed(d); const [a,b]=s.split("."); return (neg?"−":"")+a.replace(/\B(?=(\d{3})+(?!\d))/g,"'")+(b?"."+b:""); };
+const pc = (n,d=1) => fmt(n,d).replace(".",",")+" %";
+
+// Rentenformel (monatlich, Vollrente) für ein massgebendes Jahreseinkommen E
+function vollrenteRaw(E){
+  const e = E/12;
+  const r = E <= 36*R0 ? 0.74*R0 + 0.26*e : 1.04*R0 + 0.16*e;
+  return Math.min(RMAX, Math.max(R0, r));
+}
+const stufe = E => Math.max(12*R0, Math.ceil(E/STEP)*STEP);          // Skala 44: Einkommensstufen zu Fr. 1'512
+const vollrente = E => E >= 72*R0 ? RMAX : Math.round(vollrenteRaw(stufe(E)));
+
+function person(i){
+  const p = S.p[i], J = FULL - p.gap, work = Math.max(0, J - p.none);
+  const ownInc = p.inc*work;
+  return {J, work, none:p.none, gap:p.gap, inc:p.inc, ownInc};
+}
+function compute(){
+  const A = person(0), B = person(1);
+  const kids = Math.min(S.kids, FULL);
+  const ppl = S.couple ? [A,B] : [A];
+  const totalInc = S.couple ? A.ownInc + B.ownInc : A.ownInc;
+  ppl.forEach(x=>{
+    x.incCredit = S.couple ? totalInc/2 : x.ownInc;                 // Splitting
+    x.kidYears = Math.min(kids, x.J);
+    x.edu = x.kidYears * EGS * (S.couple ? 0.5 : 1);
+    x.sum = x.incCredit + x.edu;
+    x.E = x.J > 0 ? x.sum / x.J : 0;
+    x.Es = x.J > 0 ? Math.min(stufe(x.E), 72*R0) : 0;
+    x.voll = x.J > 0 ? vollrente(x.E) : 0;
+    x.teil = x.J > 0 ? Math.round(x.voll * x.J / FULL) : 0;
+    x.paid = x.ownInc*AHV + x.none*MINB;
+  });
+  let factor = 1, sumR = ppl.reduce((a,x)=>a+x.teil,0);
+  if (S.couple && sumR > PLAF) factor = PLAF/sumR;
+  ppl.forEach(x=>{ x.final = Math.round(x.teil*factor); x.year = x.final*13; });
+  return {ppl, kids, totalInc, sumR, factor};
+}
+
+/* ---------- Eingaben ---------- */
+function personHTML(i){
+  const nm = S.couple ? (i===0?"Person A":"Person B") : "Person";
+  return `<div class="person"><h3><span class="sw" style="background:var(${i===0?"--c-work":"--c-pay"})"></span>${nm}</h3>
+    <div class="field"><label for="inc${i}">Durchschnittliches Erwerbseinkommen pro Jahr</label>
+      <div class="inrow"><span class="unit">Fr.</span><input type="number" id="inc${i}" min="0" max="500000" step="1000" inputmode="numeric"></div>
+      <input type="range" id="incR${i}" min="0" max="150000" step="1000" aria-label="Einkommen ${nm}, Regler"></div>
+    <div class="field"><label for="gap${i}">Beitragslücken (z. B. Ausland ohne Beiträge)</label>
+      <div class="inrow"><input type="number" id="gap${i}" min="0" max="44" step="1" inputmode="numeric"><span class="unit">Jahre</span></div>
+      <input type="range" id="gapR${i}" min="0" max="20" step="1" aria-label="Beitragslücken ${nm}, Regler"></div>
+    <div class="field"><label for="none${i}">Jahre ohne Erwerb, Mindestbeitrag bezahlt</label>
+      <div class="inrow"><input type="number" id="none${i}" min="0" max="44" step="1" inputmode="numeric"><span class="unit">Jahre</span></div>
+      <input type="range" id="noneR${i}" min="0" max="20" step="1" aria-label="Jahre ohne Erwerb ${nm}, Regler"></div>
+  </div>`;
+}
+function buildInputs(){
+  $("persons").className = "persons" + (S.couple ? "" : " single");
+  $("persons").innerHTML = personHTML(0) + (S.couple ? personHTML(1) : "");
+  const n = S.couple ? 2 : 1;
+  for(let i=0;i<n;i++){
+    const bind = (k, max) => {
+      const num = $(k+i), rng = $(k+"R"+i);
+      num.value = S.p[i][k]; rng.value = Math.min(S.p[i][k], Number(rng.max));
+      const set = v => { let x = Math.round(Number(v)); if(!isFinite(x)) x = 0; x = Math.max(0, Math.min(max, x));
+        S.p[i][k] = x; if(k==="gap") S.p[i].none = Math.min(S.p[i].none, FULL-x); if(k==="none") S.p[i][k] = Math.min(x, FULL-S.p[i].gap); render(); };
+      num.addEventListener("input", e => { set(e.target.value); rng.value = Math.min(S.p[i][k], Number(rng.max)); });
+      rng.addEventListener("input", e => { set(e.target.value); num.value = S.p[i][k]; });
+    };
+    bind("inc", 1000000); bind("gap", FULL); bind("none", FULL);
+  }
+  $("mSingle").setAttribute("aria-pressed", !S.couple); $("mCouple").setAttribute("aria-pressed", S.couple);
+  $("kids").value = S.kids; $("kidsR").value = Math.min(S.kids, 30);
+}
+$("mSingle").addEventListener("click", ()=>{ S.couple=false; buildInputs(); render(); });
+$("mCouple").addEventListener("click", ()=>{ S.couple=true; buildInputs(); render(); });
+const setKids = v => { let x = Math.round(Number(v)); if(!isFinite(x)) x=0; S.kids = Math.max(0, Math.min(FULL, x)); render(); };
+$("kids").addEventListener("input", e=>{ setKids(e.target.value); $("kidsR").value = Math.min(S.kids,30); });
+$("kidsR").addEventListener("input", e=>{ setKids(e.target.value); $("kids").value = S.kids; });
+document.querySelectorAll("[data-ex]").forEach(b=>b.addEventListener("click",()=>{ const ex = EX[b.dataset.ex];
+  S.couple = ex.couple; S.kids = ex.kids; S.p = ex.p.map(o=>({...o})); buildInputs(); render(); }));
+
+/* ---------- Darstellung ---------- */
+function yearsStrip(x, label){
+  let cells = "";
+  for(let y=0;y<FULL;y++){
+    const cls = y < x.work ? `style="background:var(--c-work)"` : y < x.work + x.none ? `style="background:var(--c-none)"` : `class="gap"`;
+    cells += `<span ${cls} title="Jahr ${y+1}"></span>`;
+  }
+  return `<div style="display:flex;flex-direction:column;gap:4px">${label?`<span class="who">${label}</span>`:""}<div class="years" role="img" aria-label="${x.work} Jahre mit Erwerb, ${x.none} Jahre Mindestbeitrag, ${x.gap} Lücken">${cells}</div><div class="yaxis"><span>Alter 21</span><span>43</span><span>65</span></div></div>`;
+}
+function formulaChart(c){
+  const svg = $("formula"), W=680,H=290,L=54,Rr=16,T=24,B=42, pw=W-L-Rr, ph=H-T-B;
+  const xmax = 120000, ymin = 0, ymax = 2800;
+  const X = v => L + Math.min(v,xmax)/xmax*pw, Y = v => T + ph - (v-ymin)/(ymax-ymin)*ph;
+  let g = '<g class="grid">';
+  for(const y of [0,500,1000,1500,2000,2500]) g += `<line x1="${L}" x2="${W-Rr}" y1="${Y(y)}" y2="${Y(y)}"/><text x="${L-6}" y="${Y(y)+4}" text-anchor="end">${fmt(y)}</text>`;
+  for(const x of [0,15120,45360,90720,120000]) g += `<text x="${X(x)}" y="${H-B+18}" text-anchor="${x===0?"start":x===120000?"end":"middle"}">${fmt(x)}</text>`;
+  g += `<text x="${W-Rr}" y="${H-6}" text-anchor="end">massgebendes durchschnittliches Jahreseinkommen, Fr.</text><text x="${L}" y="${T-10}">Rente pro Monat, Fr.</text></g>`;
+  // Zonen
+  g += `<rect x="${X(0)}" y="${T}" width="${X(15120)-X(0)}" height="${ph}" fill="var(--nord13)" fill-opacity=".14"/>`;
+  g += `<rect x="${X(90720)}" y="${T}" width="${X(xmax)-X(90720)}" height="${ph}" fill="var(--nord14)" fill-opacity=".16"/>`;
+  g += `<text x="${(X(0)+X(15120))/2}" y="${Y(300)}" text-anchor="middle">Minimal-</text><text x="${(X(0)+X(15120))/2}" y="${Y(300)+14}" text-anchor="middle">rente</text>`;
+  g += `<text x="${(X(90720)+X(xmax))/2}" y="${Y(300)}" text-anchor="middle">Maximalrente</text>`;
+  g += `<line x1="${X(45360)}" x2="${X(45360)}" y1="${T}" y2="${Y(0)}" stroke="var(--muted)" stroke-dasharray="3 4"/><text x="${X(45360)+5}" y="${T+12}">Knick</text>`;
+  // Kurve
+  let d = "", d2 = "";
+  const ref = c.ppl[0];
+  for(let i=0;i<=240;i++){ const E = i*xmax/240; const v = vollrenteRaw(E); d += (i?" L ":"M ")+X(E).toFixed(1)+" "+Y(v).toFixed(1);
+    if(ref.J<FULL) d2 += (i?" L ":"M ")+X(E).toFixed(1)+" "+Y(v*ref.J/FULL).toFixed(1); }
+  let s = "";
+  if(d2) s += `<path d="${d2}" fill="none" stroke="var(--c-rent)" stroke-width="2.5" stroke-dasharray="6 4"/>`;
+  s += `<path d="${d}" fill="none" stroke="var(--c-work)" stroke-width="3"/>`;
+  s += `<line x1="${L}" x2="${W-Rr}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--muted)"/>`;
+  c.ppl.forEach((x,i)=>{
+    if(x.J<=0) return;
+    const ex = X(Math.min(x.E,xmax)), col = i===0 ? "--c-work" : "--c-pay";
+    s += `<line x1="${ex}" x2="${ex}" y1="${Y(x.voll)}" y2="${Y(0)}" stroke="var(${col})" stroke-dasharray="3 3"/>`;
+    s += `<circle cx="${ex}" cy="${Y(x.voll)}" r="6" fill="var(${col})" stroke="var(--surface)" stroke-width="2"/>`;
+    if(x.J<FULL) s += `<circle cx="${ex}" cy="${Y(x.teil)}" r="5" fill="var(--c-rent)" stroke="var(--surface)" stroke-width="2"/>`;
+    const right = ex > W-180, nm = c.ppl.length>1 ? (i===0?"A: ":"B: ") : "";
+    s += `<text class="lbl" x="${ex + (right?-10:10)}" y="${Y(x.voll) - 10 - i*16}" text-anchor="${right?"end":"start"}">${nm}Fr. ${fmt(x.voll)}</text>`;
+  });
+  svg.innerHTML = g + s;
+}
+function flowChart(c){
+  const svg = $("flow"), W=680, L=170, Rr=16;
+  const rows = [];
+  c.ppl.forEach((x,i)=>{ const nm = c.ppl.length>1 ? (i===0?"Person A":"Person B") : "";
+    rows.push([`${nm?nm+": ":""}Beiträge`, x.paid*1, "--c-pay"]); rows.push([`${nm?nm+": ":""}Renten`, x.year*YEARS_RENT, "--c-rent"]); });
+  const max = Math.max(...rows.map(r=>r[1]), 1), bh = rows.length > 2 ? 22 : 34, gap = 10;
+  const H = rows.length*(bh+gap)+10; svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  let s = "";
+  rows.forEach(([l,v,col],i)=>{ const y = 5 + i*(bh+gap), w = v/max*(W-L-Rr-120);
+    s += `<text class="lbl" x="${L-10}" y="${y+bh/2+4}" text-anchor="end">${l}</text>`;
+    s += `<rect x="${L}" y="${y}" width="${Math.max(w,2)}" height="${bh}" rx="6" fill="var(${col})"/>`;
+    s += `<text class="lbl" x="${L+w+8}" y="${y+bh/2+4}">Fr. ${fmt(v)}</text>`; });
+  svg.innerHTML = s;
+}
+
+function render(){
+  const c = compute(), [A,B] = c.ppl;
+  const two = c.ppl.length > 1;
+  const lab = (i) => two ? (i===0?"Person A":"Person B") : "";
+  // Ergebnis
+  const totalM = c.ppl.reduce((a,x)=>a+x.final,0);
+  $("resK").textContent = two ? "Monatliche Altersrenten zusammen" : "Monatliche Altersrente";
+  $("resV").textContent = "Fr. " + fmt(totalM);
+  $("resS").textContent = `Pro Jahr mit 13. Rente: Fr. ${fmt(totalM*13)}`;
+  $("resRow").innerHTML = two ? `<span>A: <b>Fr. ${fmt(A.final)}</b></span><span>B: <b>Fr. ${fmt(B.final)}</b></span>` : `<span>Skala <b>${A.J}</b> von 44</span><span>Einkommen <b>Fr. ${fmt(A.E)}</b></span>`;
+
+  // Schritt 1
+  $("yearsBox").innerHTML = c.ppl.map((x,i)=>yearsStrip(x, lab(i))).join("");
+  $("c1").textContent = c.ppl.map((x,i)=>`${two?lab(i)+": ":""}44 − ${x.gap} Lücken = ${x.J} Beitragsjahre (davon ${x.work} mit Erwerb, ${x.none} mit Mindestbeitrag)  →  Rentenskala ${x.J}`).join("\n");
+
+  // Schritt 2
+  const maxSum = Math.max(...c.ppl.map(x=>x.sum), 1);
+  $("sumBox").innerHTML = c.ppl.map((x,i)=>`<div style="display:flex;flex-direction:column;gap:4px">${two?`<span class="who">${lab(i)}</span>`:""}<div class="stack" role="img" aria-label="Erwerbseinkommen ${fmt(x.incCredit)}, Gutschriften ${fmt(x.edu)}"><span style="width:${x.incCredit/maxSum*100}%;background:var(--c-work)"></span><span style="width:${x.edu/maxSum*100}%;background:var(--c-edu)"></span></div></div>`).join("");
+  $("c2").innerHTML = c.ppl.map((x,i)=>{
+    let t = two ? `${lab(i)}\n` : "";
+    if(two) t += `Eigene Einkommen: ${fmt(x.inc)} × ${x.work} J. = ${fmt(x.ownInc)}\nSplitting: (${fmt(A.ownInc)} + ${fmt(B.ownInc)}) ÷ 2 = ${fmt(x.incCredit)}\n`;
+    else t += `Erwerbseinkommen: ${fmt(x.inc)} × ${x.work} J. = ${fmt(x.incCredit)}\n`;
+    t += `Erziehungsgutschriften: ${x.kidYears} J. × ${fmt(EGS)}${two?" ÷ 2":""} = ${fmt(x.edu)}\n`;
+    t += `Summe: ${fmt(x.sum)}\n÷ ${x.J} Beitragsjahre = Fr. ${fmt(x.E)}`;
+    return `<div class="calc">${t}</div>`; }).join("");
+
+  // Schritt 3
+  formulaChart(c);
+  $("c3").innerHTML = c.ppl.map((x,i)=>{
+    if(x.J<=0) return `<div class="calc">${two?lab(i)+"\n":""}Keine Beitragsjahre: keine Rente.</div>`;
+    const Es = x.Es, e = Es/12;
+    let t = two ? `${lab(i)}\n` : "";
+    t += `Einkommen ${fmt(x.E)} → Stufe bis ${fmt(Es)}\n`;
+    if(Es <= 12*R0) t += `unter 15'120: Minimalrente\n`;
+    else if(Es >= 72*R0) t += `ab 90'720: Maximalrente\n`;
+    else if(Es <= 36*R0) t += `0,74 × 1'260 + 0,26 × ${fmt(e,2)}\n= ${fmt(0.74*R0,2)} + ${fmt(0.26*e,2)}\n`;
+    else t += `1,04 × 1'260 + 0,16 × ${fmt(e,2)}\n= ${fmt(1.04*R0,2)} + ${fmt(0.16*e,2)}\n`;
+    t += `Vollrente: Fr. ${fmt(x.voll)} pro Monat`;
+    return `<div class="calc">${t}</div>`; }).join("");
+
+  // Schritt 4
+  $("c4").innerHTML = c.ppl.map((x,i)=>`<div class="calc">${two?lab(i)+"\n":""}${fmt(x.voll)} × ${x.J} ÷ 44 = Fr. ${fmt(x.teil)}${x.J<FULL?`\nKürzung: Fr. ${fmt(x.voll-x.teil)} pro Monat (${pc((FULL-x.J)/FULL*100)})`:"\nKeine Lücken: volle Rente"}</div>`).join("");
+
+  // Schritt 5
+  if(!two) $("c5").textContent = "Einzelperson: keine Plafonierung.\nRente: Fr. " + fmt(A.teil);
+  else $("c5").textContent = `Summe: ${fmt(A.teil)} + ${fmt(B.teil)} = ${fmt(c.sumR)}\nPlafond: 150 % × 2'520 = 3'780\n` +
+    (c.factor < 1 ? `Kürzung im Verhältnis 3'780 ÷ ${fmt(c.sumR)} = ${pc(c.factor*100,2)}\nA: Fr. ${fmt(A.final)}, B: Fr. ${fmt(B.final)}, zusammen Fr. ${fmt(A.final+B.final)}` : "Unter dem Plafond: keine Kürzung.");
+
+  // Schritt 6
+  $("c6").textContent = c.ppl.map((x,i)=>`${two?lab(i)+": ":""}${fmt(x.final)} × 12 + 13. Rente ${fmt(x.final)} = Fr. ${fmt(x.year)} pro Jahr`).join("\n");
+  const ref = A;
+  $("kpis").innerHTML =
+    `<div class="kpi"><span class="k">Rente pro Jahr${two?" (zusammen)":""}</span><span class="v">${fmt(c.ppl.reduce((a,x)=>a+x.year,0))}</span><span class="s">12 Monatsrenten + 13. Rente</span></div>`+
+    `<div class="kpi"><span class="k">Ersatzquote${two?" Person A":""}</span><span class="v">${ref.inc>0?pc(ref.year/ref.inc*100,0):"–"}</span><span class="s">Jahresrente ÷ Erwerbseinkommen</span></div>`+
+    `<div class="kpi"><span class="k">Abstand zur Maximalrente${two?" A":""}</span><span class="v">${fmt(RMAX-ref.final)}</span><span class="s">pro Monat</span></div>`;
+
+  flowChart(c);
+}
+
+buildInputs(); render();
+})();
+</script>
+
+</body></html>

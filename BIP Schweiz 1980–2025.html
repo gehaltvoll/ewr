@@ -1,0 +1,727 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!--
+Entscheidungen:
+- Einsatztyp: Lernmaterial EWR (Schüler:innen erkunden selbst), mit Beamer-Modus (grosse Schrift, Pfeiltasten springen zwischen Abschnitten, Vollbild-Knopf)
+- Zeitraum: 1980–2025; Abschnitt Produktionsfaktoren 1980–2023 (letztes Jahr der Penn World Table)
+- Interaktivität: umschaltbare Diagramme (Niveau/Wachstum, Niveau/Index, Anteile/real, Faktoren/pro Stunde/Zerlegung), Jahreswahl Verwendungsseite, Wachstumsrechner mit Schiebereglern, Quiz mit 7 Fragen und sofortiger Rückmeldung mit Begründung
+- Angebotsseite (Sektoren) auf Wunsch entfernt; ersetzt durch Produktionsfunktion Y = A·K^α·L^(1−α) mit α = 0,35 (Lohnquote ≈ 65 % laut PWT); A als Solow-Residuum, L = Arbeitsstunden
+- Datenhaltung: keine; localStorage nur für gewählte Variante und Beamer-Modus (Komfort)
+- Daten: Weltbank WDI (beruht auf BFS/SECO-Daten), Stand 08.10.2026; 2025 provisorisch. Reale Komponenten sind verkettet und daher nicht addierbar → Zusammensetzung als nominale Anteile, Entwicklung als Index
+- Variante A „Klar“: sachlich-minimal, feine Linien, Frost-Töne als einziger Akzent
+- Variante B „Lebendig“: grössere Titel (700), runde Karten, Aurora-Farben je Kategorie
+- Farben: Nord-Palette; Schriften: Open Sans (Text), Google Sans Code (Zahlen in Tabellen)
+-->
+<title>BIP Schweiz 1980–2025</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400;600&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: eine Lesespalte (max. 1080px), Sticky-Navigation mit 5 Abschnitten, jeder Abschnitt = Erklärung + Diagramm + Detailkarte */
+:root{
+  --nord0:#2E3440;--nord1:#3B4252;--nord2:#434C5E;--nord3:#4C566A;
+  --nord4:#D8DEE9;--nord5:#E5E9F0;--nord6:#ECEFF4;
+  --nord7:#8FBCBB;--nord8:#88C0D0;--nord9:#81A1C1;--nord10:#5E81AC;
+  --nord11:#BF616A;--nord12:#D08770;--nord13:#EBCB8B;--nord14:#A3BE8C;--nord15:#B48EAD;
+
+  --bg:var(--nord6);--surface:var(--nord5);--surface-2:var(--nord4);--line:var(--nord4);
+  --text:var(--nord0);--text-muted:var(--nord3);--accent:var(--nord10);--accent-soft:var(--nord9);
+  --ok:var(--nord14);--warn:var(--nord13);--bad:var(--nord11);--merke:var(--nord15);--info:var(--nord8);
+  --header-bg:var(--nord6);--header-text:var(--nord0);
+
+  --font:"Open Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"Google Sans Code",ui-monospace,"Cascadia Code",Consolas,"SF Mono",monospace;
+  --base:17px;--body-weight:400;
+  --radius:4px;--card-border:1px solid var(--line);--h-weight:600;--h1-size:2.1rem;--h2-size:1.5rem;
+  --gap:1.5rem;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:var(--nord0);--surface:var(--nord1);--surface-2:var(--nord2);--line:var(--nord2);
+    --text:var(--nord6);--text-muted:var(--nord4);--accent:var(--nord8);
+    --header-bg:var(--nord0);--header-text:var(--nord6);color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:var(--nord0);--surface:var(--nord1);--surface-2:var(--nord2);--line:var(--nord2);
+  --text:var(--nord6);--text-muted:var(--nord4);--accent:var(--nord8);
+  --header-bg:var(--nord0);--header-text:var(--nord6);color-scheme:dark;
+}
+/* Variante B – lebendig */
+:root[data-variant="b"]{--radius:16px;--h-weight:700;--h1-size:2.5rem;--h2-size:1.8rem;--card-border:0 solid transparent;--header-bg:var(--nord1);--header-text:var(--nord6)}
+/* Beamer-Modus */
+:root[data-beamer="on"]{--base:22px;--body-weight:600}
+
+*{box-sizing:border-box}
+html{font-size:var(--base)}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-weight:var(--body-weight);line-height:1.6;font-size:1rem}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--header-bg)}
+button,select,input{font:inherit;color:inherit}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
+
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+header.top{background:var(--header-bg);color:var(--header-text)}
+header.top .wrap{padding-block:2rem 1.5rem;display:flex;flex-wrap:wrap;gap:1rem 2rem;align-items:flex-end;justify-content:space-between}
+header.top h1{margin:0;font-size:var(--h1-size);font-weight:700;line-height:1.15;text-wrap:balance}
+header.top p{margin:.4rem 0 0;max-width:62ch;opacity:.85}
+.eyebrow{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;font-weight:600;opacity:.8}
+.controls{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+.seg{display:inline-flex;border:1px solid currentColor;border-radius:999px;overflow:hidden;opacity:.95}
+.seg button{background:transparent;border:0;padding:.35rem .9rem;cursor:pointer;font-size:.85rem;font-weight:600}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--nord6)}
+:root[data-theme="dark"] .seg button[aria-pressed="true"],:root[data-theme="dark"] .btn-plain[aria-pressed="true"]{color:var(--nord0)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .seg button[aria-pressed="true"],:root:not([data-theme="light"]) .btn-plain[aria-pressed="true"]{color:var(--nord0)}}
+.btn-plain{background:transparent;border:1px solid currentColor;border-radius:999px;padding:.35rem .9rem;cursor:pointer;font-size:.85rem;font-weight:600}
+.btn-plain[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--nord6)}
+
+nav.secnav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+nav.secnav .wrap{display:flex;gap:.25rem;overflow-x:auto;padding-block:.4rem}
+nav.secnav a{white-space:nowrap;text-decoration:none;color:var(--text-muted);padding:.35rem .75rem;border-radius:var(--radius);font-size:.9rem;font-weight:600}
+nav.secnav a.active{color:var(--text);background:var(--surface)}
+nav.secnav a .n{font-family:var(--font-mono);margin-right:.35rem;color:var(--accent)}
+
+main .wrap{padding-block:2rem 3rem;display:grid;gap:3.5rem}
+section{scroll-margin-top:4rem;display:grid;gap:var(--gap)}
+section > header h2{margin:0;font-size:var(--h2-size);font-weight:var(--h-weight);text-wrap:balance;line-height:1.25}
+section > header p{margin:.5rem 0 0;max-width:68ch}
+.lead{color:var(--text-muted);font-size:.95rem}
+
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem}
+.kpi{background:var(--surface);border:var(--card-border);border-radius:var(--radius);padding:1rem 1.1rem;display:grid;gap:.15rem;align-content:start}
+.kpi .lbl{font-size:.78rem;color:var(--text-muted);font-weight:600;letter-spacing:.03em}
+.kpi .val{font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.kpi .sub{font-size:.8rem;color:var(--text-muted)}
+:root[data-variant="b"] .kpi:nth-child(1){box-shadow:inset 0 -5px 0 var(--nord10)}
+:root[data-variant="b"] .kpi:nth-child(2){box-shadow:inset 0 -5px 0 var(--nord14)}
+:root[data-variant="b"] .kpi:nth-child(3){box-shadow:inset 0 -5px 0 var(--nord15)}
+:root[data-variant="b"] .kpi:nth-child(4){box-shadow:inset 0 -5px 0 var(--nord13)}
+
+.panel{background:var(--surface);border:var(--card-border);border-radius:var(--radius);padding:1.1rem 1.1rem 1rem;display:grid;gap:.8rem;min-width:0}
+:root[data-variant="a"] .panel{background:transparent;border-top:1px solid var(--line);border-left:0;border-right:0;border-bottom:0;border-radius:0;padding-inline:0}
+.panel-head{display:flex;flex-wrap:wrap;gap:.6rem 1rem;justify-content:space-between;align-items:center}
+.panel-head h3{margin:0;font-size:1.05rem;font-weight:600}
+.chart-box{position:relative;height:360px;min-width:0}
+:root[data-beamer="on"] .chart-box{height:520px}
+.note{font-size:.82rem;color:var(--text-muted);margin:0}
+
+.tabs{display:inline-flex;background:var(--surface-2);border-radius:999px;padding:3px;gap:2px;flex-wrap:wrap}
+.tabs button{border:0;background:transparent;border-radius:999px;padding:.3rem .85rem;cursor:pointer;font-size:.85rem;font-weight:600;color:var(--text-muted)}
+.tabs button[aria-pressed="true"]{background:var(--bg);color:var(--text);box-shadow:0 1px 2px rgba(46,52,64,.18)}
+
+.events{display:flex;flex-wrap:wrap;gap:.5rem;padding:0;margin:0;list-style:none}
+.events li{border:1px solid var(--line);border-radius:999px;padding:.25rem .75rem;font-size:.85rem;background:var(--bg)}
+.events li b{font-variant-numeric:tabular-nums}
+.events .neg::before{content:"▼ ";color:var(--bad)}
+.events .pos::before{content:"▲ ";color:var(--ok)}
+
+.merke{border-left:5px solid var(--merke);background:var(--surface);padding:.8rem 1rem;border-radius:0 var(--radius) var(--radius) 0;max-width:72ch}
+.merke strong:first-child{display:block;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;margin-bottom:.15rem}
+.formula{font-size:1.25rem;font-weight:700;letter-spacing:.01em;padding:.4rem 0;overflow-x:auto}
+.formula span{white-space:nowrap}
+.formula .c1{border-bottom:4px solid var(--c1)}.formula .c2{border-bottom:4px solid var(--c2)}.formula .c3{border-bottom:4px solid var(--c3)}.formula .c4{border-bottom:4px solid var(--c4)}.formula .c5{border-bottom:4px solid var(--c5)}
+
+.two{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:1.25rem;align-items:start}
+.yearpick{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.yearpick input[type=range]{flex:1;min-width:140px;accent-color:var(--accent)}
+.yearpick output{font-family:var(--font-mono);font-weight:600;font-size:1.1rem;min-width:3.5ch}
+table.breakdown{width:100%;border-collapse:collapse;font-size:.92rem}
+table.breakdown td{padding:.42rem .2rem;border-bottom:1px solid var(--line);vertical-align:middle}
+table.breakdown td.num{text-align:right;font-family:var(--font-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+table.breakdown tr.total td{font-weight:700;border-bottom:0;border-top:2px solid var(--text)}
+.sw{display:inline-block;width:.8rem;height:.8rem;border-radius:3px;margin-right:.5rem;vertical-align:-.05rem}
+.bar{height:.45rem;border-radius:999px;background:var(--surface-2);overflow:hidden;min-width:60px}
+.bar i{display:block;height:100%}
+
+.formula sup{font-size:.6em}
+.formula .f-a{border-bottom:4px solid var(--cA)}.formula .f-k{border-bottom:4px solid var(--cK)}.formula .f-l{border-bottom:4px solid var(--cL)}
+.factors{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
+.factor{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:.9rem 1rem;display:grid;gap:.3rem;align-content:start;border-top:5px solid var(--fc)}
+.factor h4{margin:0;font-size:1rem;font-weight:600}
+.factor .val{font-size:1.5rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.factor p{margin:0;font-size:.88rem;color:var(--text-muted)}
+.presets{display:flex;flex-wrap:wrap;gap:.4rem}
+.presets button{background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:.25rem .75rem;cursor:pointer;font-size:.82rem;font-weight:600;font-family:var(--font-mono)}
+.presets button:hover{border-color:var(--accent)}
+.calc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1.5rem;align-items:start}
+.sliders{display:grid;gap:1rem}
+.sl{display:grid;grid-template-columns:1fr auto;gap:.2rem .8rem;align-items:center}
+.sl label{font-weight:600;font-size:.95rem}
+.sl input{grid-column:1 / -1;width:100%;accent-color:var(--accent)}
+.sl output{font-family:var(--font-mono);font-weight:600;font-variant-numeric:tabular-nums;grid-row:1;grid-column:2}
+.result{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:1rem;display:grid;gap:.5rem;min-width:0}
+.result .lbl{font-size:.78rem;color:var(--text-muted);font-weight:600;letter-spacing:.03em}
+.result .big{font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.stack{display:flex;height:.9rem;border-radius:999px;overflow:hidden;background:var(--surface-2)}
+.stack i{display:block;height:100%}
+
+/* Quiz */
+.quiz{display:grid;gap:1rem}
+.q{background:var(--surface);border:var(--card-border);border-radius:var(--radius);padding:1rem 1.1rem;display:grid;gap:.6rem}
+:root[data-variant="a"] .q{background:transparent;border:1px solid var(--line)}
+.q h3{margin:0;font-size:1rem;font-weight:600}
+.q h3 .qn{font-family:var(--font-mono);color:var(--accent);margin-right:.4rem}
+.opts{display:grid;gap:.45rem}
+.opts button{text-align:left;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:.55rem .8rem;cursor:pointer}
+.opts button:hover:not(:disabled){border-color:var(--accent)}
+.opts button:disabled{cursor:default}
+.opts button.right{border:2px solid var(--ok)}
+.opts button.wrong{border:2px solid var(--bad)}
+.fb{margin:0;padding:.6rem .8rem;border-radius:var(--radius);background:var(--bg);border-left:4px solid var(--info)}
+.fb.ok{border-left-color:var(--ok)}.fb.no{border-left-color:var(--bad)}
+.score{font-weight:600}
+.reset{justify-self:start}
+
+footer.src{border-top:1px solid var(--line)}
+footer.src .wrap{padding-block:1.5rem 2.5rem;font-size:.82rem;color:var(--text-muted);display:grid;gap:.4rem}
+footer.src p{margin:0;max-width:90ch}
+
+@media (max-width:820px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .two,.calc{grid-template-columns:minmax(0,1fr)}
+  .factors{grid-template-columns:minmax(0,1fr)}
+  .chart-box{height:300px}
+}
+@media (max-width:420px){.kpi .val{font-size:1.3rem}.chart-box{height:270px}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+html{scroll-behavior:smooth}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">EWR · Volkswirtschaftliche Gesamtrechnung</div>
+      <h1>Das Bruttoinlandprodukt der Schweiz</h1>
+      <p>Wie ist die Schweizer Wirtschaft seit 1980 gewachsen, pro Kopf und insgesamt? Wofür wird das BIP verwendet, und welchen Anteil haben Kapital, Arbeit und technischer Fortschritt am Wachstum?</p>
+    </div>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Design-Variante">
+        <button type="button" id="varA" data-variant="a">Variante A</button>
+        <button type="button" id="varB" data-variant="b">Variante B</button>
+      </div>
+      <button type="button" class="btn-plain" id="beamerBtn" aria-pressed="false">Beamer-Modus</button>
+      <button type="button" class="btn-plain" id="fsBtn" hidden>Vollbild</button>
+    </div>
+  </div>
+</header>
+
+<nav class="secnav" aria-label="Abschnitte">
+  <div class="wrap">
+    <a href="#bip"><span class="n">1</span>Reales BIP</a>
+    <a href="#kopf"><span class="n">2</span>BIP pro Kopf</a>
+    <a href="#verwendung"><span class="n">3</span>Verwendungsseite</a>
+    <a href="#faktoren"><span class="n">4</span>Kapital, Arbeit, Fortschritt</a>
+    <a href="#quiz"><span class="n">5</span>Quiz</a>
+  </div>
+</nav>
+
+<main>
+<div class="wrap">
+
+<section id="bip" aria-labelledby="h-bip">
+  <header>
+    <h2 id="h-bip">1 · Reales BIP: Wie stark ist die Wirtschaft gewachsen?</h2>
+    <p>Das <strong>Bruttoinlandprodukt (BIP)</strong> misst den Wert aller Waren und Dienstleistungen, die in einem Jahr in der Schweiz hergestellt werden (abzüglich Vorleistungen). Beim <strong>realen</strong> BIP sind Preisänderungen herausgerechnet. Es zeigt also, ob <em>mehr</em> produziert wurde, nicht ob alles nur teurer wurde.</p>
+  </header>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h3 id="t-bip">Reales BIP, Mrd. CHF zu konstanten Preisen</h3>
+      <div class="tabs" role="group" aria-label="Darstellung reales BIP">
+        <button type="button" data-chart="bip" data-mode="niveau" aria-pressed="true">Niveau</button>
+        <button type="button" data-chart="bip" data-mode="wachstum" aria-pressed="false">Wachstum in %</button>
+      </div>
+    </div>
+    <div class="chart-box"><canvas id="cBip" role="img" aria-label="Diagramm reales BIP der Schweiz 1980 bis 2025"></canvas></div>
+    <ul class="events" id="events" aria-label="Wichtige Jahre"></ul>
+  </div>
+
+  <div class="merke"><strong>Merke</strong>Eine <b>Rezession</b> ist ein Rückgang des realen BIP. In der Schweiz gab es seit 1980 nur wenige Jahre mit Rückgang: die Krise 1991–1993, ein leichter Rückgang 2003, die Finanzkrise 2009 und die Corona-Pandemie 2020.</div>
+</section>
+
+<section id="kopf" aria-labelledby="h-kopf">
+  <header>
+    <h2 id="h-kopf">2 · BIP pro Kopf: Wächst auch der Wohlstand?</h2>
+    <p>Das BIP wächst auch dann, wenn einfach mehr Menschen arbeiten. Für den <strong>materiellen Wohlstand</strong> ist deshalb das reale BIP <strong>pro Kopf</strong> aussagekräftiger: reales BIP geteilt durch die Bevölkerung.</p>
+  </header>
+  <div class="panel">
+    <div class="panel-head">
+      <h3 id="t-kopf">Reales BIP pro Kopf, CHF zu konstanten Preisen</h3>
+      <div class="tabs" role="group" aria-label="Darstellung BIP pro Kopf">
+        <button type="button" data-chart="kopf" data-mode="niveau" aria-pressed="true">Niveau</button>
+        <button type="button" data-chart="kopf" data-mode="index" aria-pressed="false">Vergleich (1980 = 100)</button>
+        <button type="button" data-chart="kopf" data-mode="wachstum" aria-pressed="false">Wachstum in %</button>
+      </div>
+    </div>
+    <div class="chart-box"><canvas id="cKopf" role="img" aria-label="Diagramm reales BIP pro Kopf der Schweiz"></canvas></div>
+    <p class="note" id="kopfNote"></p>
+  </div>
+  <div class="merke"><strong>Merke</strong>BIP-Wachstum ≈ Wachstum des BIP pro Kopf + Bevölkerungswachstum. Wächst die Bevölkerung schneller als das BIP, sinkt das BIP pro Kopf, obwohl die Wirtschaft insgesamt wächst (z.&nbsp;B. 2023).</div>
+</section>
+
+<section id="verwendung" aria-labelledby="h-ver">
+  <header>
+    <h2 id="h-ver">3 · Verwendungsseite: Wofür wird das BIP verwendet?</h2>
+    <p>Die Verwendungsseite fragt: <em>Wer kauft die produzierten Güter?</em> Haushalte konsumieren, der Staat konsumiert, Unternehmen investieren und das Ausland kauft Exporte. Importe werden abgezogen, weil sie nicht in der Schweiz produziert wurden.</p>
+  </header>
+  <div class="panel">
+    <div class="formula" aria-label="BIP gleich Konsum der Haushalte plus Staatskonsum plus Investitionen plus Exporte minus Importe">
+      <span>BIP = </span><span class="c1">C</span> + <span class="c2">G</span> + <span class="c3">I</span> + (<span class="c4">X</span> − <span class="c5">M</span>)
+    </div>
+    <p class="note">C = privater Konsum · G = Staatskonsum · I = Investitionen · X = Exporte · M = Importe</p>
+  </div>
+  <div class="panel">
+    <div class="panel-head">
+      <h3 id="t-ver">Anteile am nominalen BIP in %</h3>
+      <div class="tabs" role="group" aria-label="Darstellung Verwendungsseite">
+        <button type="button" data-chart="ver" data-mode="anteile" aria-pressed="true">Zusammensetzung</button>
+        <button type="button" data-chart="ver" data-mode="real" aria-pressed="false">Reale Entwicklung</button>
+      </div>
+    </div>
+    <div class="two">
+      <div class="chart-box"><canvas id="cVer" role="img" aria-label="Diagramm Verwendungsseite des BIP"></canvas></div>
+      <div style="display:grid;gap:.6rem;min-width:0">
+        <div class="yearpick"><label for="yVer">Jahr</label><input type="range" id="yVer" min="1980" max="2025" value="2025"><output id="oVer" for="yVer">2025</output></div>
+        <table class="breakdown" id="tVer"></table>
+      </div>
+    </div>
+    <p class="note" id="verNote">Importe zählen negativ: Sie liegen im Diagramm unter der Nulllinie. Die Exporte sind grösser als die Importe, die Schweiz hat also einen Exportüberschuss. Der Aussenhandel schwankt stark, unter anderem wegen des Goldhandels.</p>
+  </div>
+  <div class="merke"><strong>Merke</strong>Der <b>private Konsum</b> ist mit rund der Hälfte des BIP der grösste Posten. Typisch für die Schweiz als kleine offene Volkswirtschaft: Exporte und Importe sind je grösser als der private Konsum.</div>
+</section>
+
+<section id="faktoren" aria-labelledby="h-fak">
+  <header>
+    <h2 id="h-fak">4 · Woher kommt das Wachstum? Kapital, Arbeit und technischer Fortschritt</h2>
+    <p>Das BIP entsteht, wenn Menschen <strong>arbeiten</strong> und dabei <strong>Kapital</strong> einsetzen: Maschinen, Gebäude, Fahrzeuge, Infrastruktur und Software. Wie viel dabei herauskommt, hängt vom <strong>technischen Fortschritt</strong> ab: von Wissen, besseren Verfahren und Organisation. Diesen Zusammenhang beschreibt die <strong>Produktionsfunktion</strong>.</p>
+  </header>
+
+  <div class="panel">
+    <div class="formula" aria-label="BIP gleich technischer Fortschritt mal Kapital hoch Alpha mal Arbeit hoch eins minus Alpha">
+      <span>Y = </span><span class="f-a">A</span> · <span class="f-k">K</span><sup>α</sup> · <span class="f-l">L</span><sup>1−α</sup>
+    </div>
+    <p class="note">Y = reales BIP · K = Kapitalstock · L = Arbeit (geleistete Arbeitsstunden) · A = technischer Fortschritt (totale Faktorproduktivität) · α ≈ 0,35 = Anteil des Kapitals am Einkommen</p>
+    <div class="factors" id="factors"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h3 id="t-fak">Entwicklung seit 1980, Index 1980 = 100</h3>
+      <div class="tabs" role="group" aria-label="Darstellung Produktionsfaktoren">
+        <button type="button" data-chart="fak" data-mode="index" aria-pressed="true">Faktoren</button>
+        <button type="button" data-chart="fak" data-mode="stunde" aria-pressed="false">Pro Arbeitsstunde</button>
+        <button type="button" data-chart="fak" data-mode="zerlegung" aria-pressed="false">Wachstumszerlegung</button>
+      </div>
+    </div>
+    <div class="chart-box"><canvas id="cFak" role="img" aria-label="Diagramm Produktionsfaktoren der Schweiz"></canvas></div>
+    <p class="note" id="fakNote"></p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h3>Wachstumsrechner</h3>
+      <div class="presets" role="group" aria-label="Werte aus einem Jahrzehnt übernehmen" id="presets"></div>
+    </div>
+    <p class="note" style="max-width:70ch">In Wachstumsraten wird die Produktionsfunktion zu einer einfachen Summe: <b>Wachstum BIP ≈ Wachstum A + α · Wachstum K + (1 − α) · Wachstum L</b>. Verschiebe die Regler oder übernimm die Schweizer Werte eines Jahrzehnts.</p>
+    <div class="calc">
+      <div class="sliders">
+        <div class="sl"><label for="gK"><span class="sw" id="swK"></span>Kapitalstock K</label><input type="range" id="gK" min="0" max="5" step="0.05" value="2.29"><output id="oK" for="gK"></output></div>
+        <div class="sl"><label for="gL"><span class="sw" id="swL"></span>Arbeitsstunden L</label><input type="range" id="gL" min="-2" max="3" step="0.05" value="0.78"><output id="oL" for="gL"></output></div>
+        <div class="sl"><label for="gA"><span class="sw" id="swA"></span>Technischer Fortschritt A</label><input type="range" id="gA" min="-1" max="3" step="0.05" value="0.44"><output id="oA" for="gA"></output></div>
+      </div>
+      <div class="result" aria-live="polite">
+        <div class="lbl">Wachstum des realen BIP</div>
+        <div class="big" id="gY"></div>
+        <div class="stack" id="stackBar" aria-hidden="true"></div>
+        <table class="breakdown" id="tCalc"></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="merke"><strong>Merke</strong>Mehr Kapital und mehr Arbeit erhöhen das BIP. Mehr Kapital pro Arbeitsstunde stösst aber an Grenzen: Jede zusätzliche Maschine bringt weniger zusätzlichen Ertrag (abnehmender Grenzertrag). Dauerhaft steigender Wohlstand pro Kopf braucht deshalb <b>technischen Fortschritt</b>. In der Schweiz wuchs die Zahl der Erwerbstätigen stark, die Arbeitsstunden pro Person sanken aber, etwa wegen mehr Teilzeitarbeit.</div>
+</section>
+
+<section id="quiz" aria-labelledby="h-quiz">
+  <header>
+    <h2 id="h-quiz">5 · Quiz: Hast du es verstanden?</h2>
+    <p class="lead">Klicke eine Antwort an. Die Diagramme oben helfen dir.</p>
+  </header>
+  <div class="quiz" id="quizBox"></div>
+  <p class="score" id="score" aria-live="polite"></p>
+  <button type="button" class="btn-plain reset" id="quizReset">Quiz neu starten</button>
+</section>
+
+</div>
+</main>
+
+<footer class="src">
+  <div class="wrap">
+    <p><strong>Quelle:</strong> Weltbank, World Development Indicators (Reihen auf Basis der Volkswirtschaftlichen Gesamtrechnung von BFS und SECO), Datenstand 8.&nbsp;Oktober 2026. Werte für 2025 sind provisorisch. Reale Werte: verkettete Volumen zu konstanten Preisen in CHF.</p>
+    <p>Die realen Komponenten der Verwendungsseite sind verkettet und lassen sich deshalb nicht exakt zum realen BIP addieren. Die Zusammensetzung wird darum mit nominalen Anteilen gezeigt. «Vorratsveränderung &amp; Rest» enthält Lagerveränderungen, Wertsachen und statistische Differenzen. Das SECO weist zusätzlich ein um grosse Sportanlässe bereinigtes BIP aus (2025: +1,4&nbsp;%), das leicht von diesen Werten abweichen kann.</p>
+    <p><strong>Kapital, Arbeit, Fortschritt:</strong> Penn World Table (Feenstra, Inklaar &amp; Timmer, Universität Groningen), abgerufen über FRED, 1980–2023: reales BIP, Kapitalstock zu konstanten Preisen, Erwerbstätige und durchschnittliche Arbeitsstunden. Der technische Fortschritt A ist eigene Berechnung als Restgrösse (Solow-Residuum) mit α = 0,35. Er enthält auch die bessere Ausbildung der Arbeitskräfte. Das BIP der Penn World Table weicht leicht von den Weltbank-Werten in den Abschnitten 1–3 ab.</p>
+    <p>Aktuelle Originaldaten: <a href="https://www.bfs.admin.ch/bfs/de/home/statistiken/volkswirtschaft/volkswirtschaftliche-gesamtrechnung.html" target="_blank" rel="noopener">BFS – Volkswirtschaftliche Gesamtrechnung</a> · <a href="https://www.seco.admin.ch/de/uebersicht-bruttoinlandprodukt" target="_blank" rel="noopener">SECO – Bruttoinlandprodukt</a></p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script>
+(function(){
+const root=document.documentElement;
+const YEARS=Array.from({length:46},(_,i)=>1980+i);
+// Reales BIP, Mrd. CHF
+const GDP=[358.155,359.784,364.277,371.2,386.9,395.259,405.896,419.509,430.245,441.667,445,439.901,434.804,425.823,442.923,461.058,463.64,473.366,486.507,494.681,512.653,520.816,522.797,521.311,534.797,550.585,573.348,596.185,611.278,599.451,618.996,627.71,634.766,646.421,662.862,672.504,685.359,695.094,718.223,726.233,709.855,753.697,780.335,786.777,797.716,808.087];
+// Reales BIP pro Kopf, CHF
+const PC=[56675,56623,56996,57830,60060,61088,62406,64095,65254,66447,66265,64692,63241,61373,63331,65485,65561,66776,68426,69244,71358,72037,71766,71033,72371,74032,76611,78953,79930,77410,79106,79332,79377,79910,80949,81197,81850,82242,84355,84689,82177,86587,88906,88513,88580,88875];
+// Bevölkerung, Tausend
+const POP=[6319,6354,6391,6419,6442,6470,6504,6545,6593,6647,6716,6800,6875,6938,6994,7041,7072,7089,7110,7144,7184,7230,7285,7339,7390,7437,7484,7551,7648,7744,7825,7912,7997,8089,8189,8282,8373,8452,8514,8575,8638,8705,8777,8889,9006,9092];
+// Reale Komponenten der Verwendungsseite, Mio. CHF (verkettet)
+const R={
+ C:[202113,204059,204574,207148,210503,214999,221022,227638,232497,238374,242134,246542,247698,246778,249787,251992,255769,260867,266481,272691,279997,286379,286737,287987,293595,299057,303967,310041,314832,319325,325842,330767,338518,346595,349725,358024,362738,368019,368321,373540,359493,367310,385194,390612,399931,406109],
+ G:[43029,44009,44288,45443,46155,48518,50076,51231,53571,58267,60974,63011,63211,63518,65079,65687,66464,66733,67747,69123,69971,70238,71681,72963,73851,74481,74334,74953,75361,77118,76963,77490,77597,78915,80583,81395,81996,83144,83810,84730,87808,90366,89854,91126,92312,93190],
+ I:[83723,85082,81637,84649,88368,91298,97115,101041,109339,114730,119674,117269,108661,105160,109651,113931,112507,117356,127055,130399,136641,135020,136583,135647,143243,147998,154915,163042,164000,153013,158914,162395,168887,171167,175653,180019,185477,193101,195757,197331,196157,203142,205164,209712,210685,209556],
+ X:[108811,125283,122826,119461,138210,149253,151532,147954,159194,168400,171679,168998,175668,174606,176940,181852,188355,216862,222061,230266,258532,258321,253277,249586,273933,291048,310773,346123,361034,331142,372691,388044,389514,443552,422615,438903,464646,460889,478132,475586,451242,512747,548816,534268,543380,569496],
+ M:[100750,108218,110595,111734,118320,125503,139831,137927,145734,156193,165375,160084,162065,159945,167154,176942,184593,205983,218384,228481,247953,252030,246390,247192,259424,285338,294421,311469,324917,316485,341742,373894,365736,409043,381971,400148,421087,418809,421125,422580,410884,431881,458622,458791,461524,506295]
+};
+// Nominale Anteile am BIP, %
+const S={
+ C:[57.6,57.4,57.5,58.3,57.2,56.6,56.1,56.1,54.9,53.8,53.1,54.4,55.6,55.6,54.9,55.4,56.1,56.8,56.6,57.1,56.2,56.3,56.1,56.5,56.4,55.8,54.1,52.6,52.3,53.4,52.7,52.4,52.4,52.4,51.8,52.2,52.1,52.7,51.2,51.2,50.6,48.0,48.2,48.8,49.3,49.5],
+ G:[9.5,9.7,9.9,10.2,10.0,10.1,10.2,10.2,10.4,10.8,11.0,11.5,11.9,11.9,11.9,11.9,12.0,11.8,11.6,11.6,11.5,11.6,11.9,12.2,11.9,11.7,11.1,10.7,10.9,11.7,11.4,11.5,11.5,11.6,11.6,11.7,11.7,11.8,11.5,11.6,12.4,12.0,11.4,11.7,11.9,12.0],
+ I:[30.4,30.8,29.2,29.9,29.7,29.9,30.6,30.9,32.7,33.3,32.7,31.3,28.2,26.5,26.8,26.6,25.5,25.7,26.9,27.2,27.5,26.9,27.1,26.6,27.4,27.3,27.1,27.2,26.9,25.4,25.4,25.6,26.2,26.2,26.3,26.5,26.7,27.5,27.0,27.0,27.6,26.8,26.3,26.9,26.5,26.0],
+ X:[45.4,47.3,43.5,42.2,46.3,46.8,43.1,40.4,41.5,43.9,40.5,39.0,39.9,40.0,39.2,39.2,40.3,45.9,45.4,46.2,50.9,49.4,47.8,47.2,50.8,53.4,56.2,61.1,62.8,57.6,64.4,66.2,67.4,71.5,64.7,63.3,66.2,65.6,66.7,66.1,63.6,69.9,75.0,70.3,71.2,78.1],
+ M:[48.2,47.3,43.5,43.8,44.1,44.9,42.8,39.6,40.8,43.3,40.8,38.1,37.8,36.6,35.8,35.9,37.5,41.9,42.2,42.9,46.5,45.8,43.1,42.6,44.2,48.3,49.6,51.6,53.6,51.5,54.8,58.8,58.4,61.3,54.5,53.1,56.7,57.3,56.8,56.9,57.9,58.1,61.3,59.4,59.2,69.1]
+};
+S.V=YEARS.map((_,i)=>+(100-S.C[i]-S.G[i]-S.I[i]-S.X[i]+S.M[i]).toFixed(1));
+// Produktionsfaktoren (Penn World Table via FRED), 1980–2023
+const PYEARS=Array.from({length:44},(_,i)=>1980+i);
+const PY=[377338,383380,378360,380778,392234,406643,414201,420768,434559,453379,470039,465734,465531,464944,470848,473112,475341,486091,500819,509146,529302,537642,537248,537074,551584,566751,589838,612939,630150,615673,635642,647167,654798,666533,682196,693416,707760,717406,737927,746354,730369,770974,794443,799872];
+const PK=[1.3993,1.4391,1.4720,1.5077,1.5461,1.5873,1.6350,1.6844,1.7417,1.8024,1.8665,1.9230,1.9647,2.0002,2.0405,2.0866,2.1298,2.1773,2.2354,2.2933,2.3525,2.4055,2.4561,2.5036,2.5577,2.6173,2.6818,2.7499,2.8150,2.8629,2.9123,2.9670,3.0259,3.0816,3.1428,3.2066,3.2733,3.3443,3.4121,3.4787,3.5422,3.6090,3.6740,3.7379];
+const PE=[3.1335,3.2043,3.2179,3.2156,3.2442,3.3069,3.3793,3.4600,3.5474,3.6401,3.7517,3.9523,3.9008,3.8720,3.8505,3.8442,3.8332,3.8258,3.8752,3.9047,3.9442,4.0136,4.0426,4.0291,4.0412,4.0729,4.1618,4.2692,4.3752,4.4011,4.4296,4.5547,4.6347,4.6902,4.7783,4.8470,4.9153,4.9605,5.0131,5.0498,5.0236,5.0570,5.1396,5.2227];
+const PH=[1824,1805,1794,1779,1760,1754,1745,1744,1743,1728,1718,1716,1725,1720,1740,1720,1697,1687,1696,1717,1713,1673,1651,1665,1695,1690,1679,1669,1659,1651,1611,1608,1593,1573,1565,1577,1577,1559,1551,1549,1499,1532,1536,1529];
+const ALPHA=0.35;
+const PL=PE.map((e,i)=>e*PH[i]);
+const PA=PY.map((y,i)=>y/(Math.pow(PK[i],ALPHA)*Math.pow(PL[i],1-ALPHA)));
+const lg=(a,i,j)=>Math.log(a[j]/a[i])/(j-i)*100;
+const PERIODS=[[1980,1990],[1990,2000],[2000,2010],[2010,2023]].map(([a,b])=>{
+  const i=a-1980,j=b-1980;const gK=lg(PK,i,j),gL=lg(PL,i,j),gY=lg(PY,i,j);
+  return {lbl:a+'–'+(b===2023?'2023':String(b).slice(2)),from:a,to:b,gY,gK,gL,gA:gY-ALPHA*gK-(1-ALPHA)*gL,gE:lg(PE,i,j),gH:lg(PH,i,j)};
+});
+const TOT=(()=>{const j=43;const gK=lg(PK,0,j),gL=lg(PL,0,j),gY=lg(PY,0,j);return {gY,gK,gL,gA:gY-ALPHA*gK-(1-ALPHA)*gL};})();
+
+const growth=a=>a.map((v,i)=>i===0?null:+((v/a[i-1]-1)*100).toFixed(2));
+const idx=a=>a.map(v=>+(v/a[0]*100).toFixed(1));
+const GDP_G=growth(GDP),PC_G=growth(PC),POP_G=growth(POP);
+const nf=(v,d=0)=>new Intl.NumberFormat('de-CH',{minimumFractionDigits:d,maximumFractionDigits:d}).format(v);
+const pct=(v,d=1)=>(v>0?'+':v<0?'−':'±')+nf(Math.abs(v),d)+' %';
+const at=y=>YEARS.indexOf(y);
+
+/* ---------- Kennzahlen ---------- */
+const L=YEARS.length-1;
+document.getElementById('kpis').innerHTML=[
+ ['Reales BIP 2025',nf(GDP[L],0)+' Mrd.','CHF zu konstanten Preisen'],
+ ['Wachstum 2025',pct(GDP_G[L]),'gegenüber 2024, provisorisch'],
+ ['BIP pro Kopf 2025',nf(PC[L])+' CHF','real, '+pct(PC_G[L])+' ggü. Vorjahr'],
+ ['Seit 1980','×'+nf(GDP[L]/GDP[0],2),'BIP · pro Kopf '+pct((PC[L]/PC[0]-1)*100,0)]
+].map(k=>`<div class="kpi"><span class="lbl">${k[0]}</span><span class="val">${k[1]}</span><span class="sub">${k[2]}</span></div>`).join('');
+
+const EVENTS=[[1991,'Immobilienkrise, Beginn der Stagnation'],[1993,'Tiefpunkt der 90er-Krise'],[2009,'Finanzkrise'],[2015,'Aufhebung Euro-Mindestkurs'],[2020,'Corona-Pandemie'],[2021,'Erholung nach Corona']];
+document.getElementById('events').innerHTML=EVENTS.map(([y,t])=>{const g=GDP_G[at(y)];return `<li class="${g<0?'neg':'pos'}"><b>${y}</b> ${t}: ${pct(g)}</li>`}).join('');
+
+document.getElementById('kopfNote').textContent=
+ `Von 1980 bis 2025 stieg das reale BIP um ${nf((GDP[L]/GDP[0]-1)*100,0)} %, die Bevölkerung um ${nf((POP[L]/POP[0]-1)*100,0)} % (von ${nf(POP[0]/1000,2)} auf ${nf(POP[L]/1000,2)} Mio.) und das reale BIP pro Kopf um ${nf((PC[L]/PC[0]-1)*100,0)} %.`;
+
+/* ---------- Farben ---------- */
+const css=n=>getComputedStyle(root).getPropertyValue(n).trim();
+function palette(){
+  const b=root.dataset.variant==='b';
+  return {
+    text:css('--text'),muted:css('--text-muted'),grid:css('--line'),accent:css('--accent'),bad:css('--nord11'),ok:css('--nord14'),
+    C:css('--nord10'),G:b?css('--nord15'):css('--text-muted'),I:b?css('--nord13'):css('--nord8'),X:b?css('--nord14'):css('--nord7'),M:b?css('--nord11'):css('--nord9'),V:css('--surface-2'),
+    fK:b?css('--nord13'):css('--nord8'),fL:b?css('--nord14'):css('--nord9'),fA:b?css('--nord15'):css('--nord7'),
+    pop:b?css('--nord13'):css('--nord9'),pc:b?css('--nord15'):css('--nord10')
+  };
+}
+function setFormulaColors(p){
+  root.style.setProperty('--c1',p.C);root.style.setProperty('--c2',p.G);root.style.setProperty('--c3',p.I);root.style.setProperty('--c4',p.X);root.style.setProperty('--c5',p.M);
+  root.style.setProperty('--cK',p.fK);root.style.setProperty('--cL',p.fL);root.style.setProperty('--cA',p.fA);
+}
+const alpha=(hex,a)=>{const h=hex.replace('#','');const n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h,16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`};
+
+/* ---------- Diagramme ---------- */
+const state={bip:'niveau',kopf:'niveau',ver:'anteile',fak:'index'};
+const charts={};
+function baseOpts(p,yTitle,extra={}){
+  const beamer=root.dataset.beamer==='on';
+  const fs=beamer?16:12;
+  return Object.assign({
+    responsive:true,maintainAspectRatio:false,animation:{duration:window.matchMedia('(prefers-reduced-motion: reduce)').matches?0:400},
+    interaction:{mode:'index',intersect:false},
+    plugins:{
+      legend:{labels:{color:p.text,font:{family:'Open Sans',size:fs},boxWidth:14,usePointStyle:false}},
+      tooltip:{titleFont:{family:'Open Sans',size:fs},bodyFont:{family:'Open Sans',size:fs},callbacks:{}}
+    },
+    scales:{
+      x:{ticks:{color:p.muted,font:{family:'Open Sans',size:fs},maxRotation:0,autoSkipPadding:12},grid:{display:false},border:{color:p.grid}},
+      y:{ticks:{color:p.muted,font:{family:'Open Sans',size:fs},callback:v=>nf(v)},grid:{color:p.grid},border:{display:false},title:{display:!!yTitle,text:yTitle,color:p.muted,font:{family:'Open Sans',size:fs}}}
+    }
+  },extra);
+}
+function make(id,cfg){ if(charts[id]) charts[id].destroy(); charts[id]=new Chart(document.getElementById(id),cfg); }
+
+function drawBip(p){
+  const t=document.getElementById('t-bip');
+  if(state.bip==='niveau'){
+    t.textContent='Reales BIP, Mrd. CHF zu konstanten Preisen';
+    const o=baseOpts(p,'Mrd. CHF');o.plugins.legend.display=false;
+    o.plugins.tooltip.callbacks.label=c=>' '+nf(c.parsed.y,1)+' Mrd. CHF';
+    make('cBip',{type:'line',data:{labels:YEARS,datasets:[{label:'Reales BIP',data:GDP,borderColor:p.C,backgroundColor:alpha(p.C,.12),fill:true,tension:.25,pointRadius:0,pointHoverRadius:5,borderWidth:3}]},options:o});
+  } else {
+    t.textContent='Wachstum des realen BIP gegenüber dem Vorjahr, in %';
+    const o=baseOpts(p,'%');o.plugins.legend.display=false;
+    o.plugins.tooltip.callbacks.label=c=>' '+pct(c.parsed.y);
+    o.scales.y.ticks.callback=v=>nf(v)+' %';
+    make('cBip',{type:'bar',data:{labels:YEARS.slice(1),datasets:[{label:'Wachstum',data:GDP_G.slice(1),backgroundColor:GDP_G.slice(1).map(v=>v<0?p.bad:p.C),borderRadius:root.dataset.variant==='b'?4:0}]},options:o});
+  }
+}
+function drawKopf(p){
+  const t=document.getElementById('t-kopf');
+  if(state.kopf==='niveau'){
+    t.textContent='Reales BIP pro Kopf, CHF zu konstanten Preisen';
+    const o=baseOpts(p,'CHF');o.plugins.legend.display=false;
+    o.plugins.tooltip.callbacks.label=c=>' '+nf(c.parsed.y)+' CHF pro Kopf';
+    make('cKopf',{type:'line',data:{labels:YEARS,datasets:[{label:'BIP pro Kopf',data:PC,borderColor:p.pc,backgroundColor:alpha(p.pc,.12),fill:true,tension:.25,pointRadius:0,pointHoverRadius:5,borderWidth:3}]},options:o});
+  } else if(state.kopf==='index'){
+    t.textContent='Entwicklung seit 1980, Index 1980 = 100';
+    const o=baseOpts(p,'Index');
+    o.plugins.tooltip.callbacks.label=c=>' '+c.dataset.label+': '+nf(c.parsed.y,1);
+    make('cKopf',{type:'line',data:{labels:YEARS,datasets:[
+      {label:'Reales BIP',data:idx(GDP),borderColor:p.C,pointRadius:0,borderWidth:3,tension:.25},
+      {label:'Bevölkerung',data:idx(POP),borderColor:p.pop,pointRadius:0,borderWidth:3,borderDash:[6,4],tension:.25},
+      {label:'BIP pro Kopf',data:idx(PC),borderColor:p.pc,pointRadius:0,borderWidth:3,tension:.25}
+    ]},options:o});
+  } else {
+    t.textContent='Wachstum gegenüber dem Vorjahr, in %';
+    const o=baseOpts(p,'%');
+    o.plugins.tooltip.callbacks.label=c=>' '+c.dataset.label+': '+pct(c.parsed.y);
+    o.scales.y.ticks.callback=v=>nf(v)+' %';
+    make('cKopf',{type:'bar',data:{labels:YEARS.slice(1),datasets:[
+      {label:'BIP pro Kopf',data:PC_G.slice(1),backgroundColor:p.pc},
+      {label:'Bevölkerung',data:POP_G.slice(1),backgroundColor:p.pop}
+    ]},options:o});
+  }
+}
+const VER_LABELS={C:'Privater Konsum (C)',G:'Staatskonsum (G)',I:'Investitionen (I)',X:'Exporte (X)',M:'Importe (−M)',V:'Vorratsveränderung & Rest'};
+function drawVer(p){
+  const t=document.getElementById('t-ver');
+  if(state.ver==='anteile'){
+    t.textContent='Anteile am nominalen BIP in %';
+    const o=baseOpts(p,'% des BIP');
+    o.scales.x.stacked=true;o.scales.y.stacked=true;
+    o.scales.y.ticks.callback=v=>nf(v)+' %';
+    o.plugins.tooltip.callbacks.label=c=>' '+c.dataset.label+': '+nf(c.parsed.y,1)+' %';
+    o.plugins.tooltip.callbacks.footer=()=> 'Summe = 100 % des BIP';
+    o.onClick=(e,els)=>{ if(els.length){ setYear('ver',YEARS[els[0].index]); } };
+    const ds=['C','G','I','X','V'].map(k=>({label:VER_LABELS[k],data:S[k],backgroundColor:p[k],borderColor:k==='V'?p.muted:p[k],borderWidth:k==='V'?1:0,stack:'s'}));
+    ds.push({label:VER_LABELS.M,data:S.M.map(v=>-v),backgroundColor:alpha(p.M,.85),stack:'s'});
+    make('cVer',{type:'bar',data:{labels:YEARS,datasets:ds},options:o});
+  } else {
+    t.textContent='Reale Entwicklung der Komponenten, Index 1980 = 100';
+    const o=baseOpts(p,'Index');
+    o.plugins.tooltip.callbacks.label=c=>' '+c.dataset.label+': '+nf(c.parsed.y,0);
+    const ds=['C','G','I','X','M'].map(k=>({label:VER_LABELS[k].replace('−',''),data:idx(R[k]),borderColor:p[k],pointRadius:0,borderWidth:3,tension:.25}));
+    ds.push({label:'Reales BIP',data:idx(GDP),borderColor:p.text,borderDash:[5,4],pointRadius:0,borderWidth:2,tension:.25});
+    make('cVer',{type:'line',data:{labels:YEARS,datasets:ds},options:o});
+  }
+}
+function drawFak(p){
+  const t=document.getElementById('t-fak'),note=document.getElementById('fakNote');
+  if(state.fak==='index'){
+    t.textContent='Entwicklung seit 1980, Index 1980 = 100';
+    const o=baseOpts(p,'Index');
+    o.plugins.tooltip.callbacks.label=c=>' '+c.dataset.label+': '+nf(c.parsed.y,0);
+    make('cFak',{type:'line',data:{labels:PYEARS,datasets:[
+      {label:'Reales BIP (Y)',data:idx(PY),borderColor:p.C,pointRadius:0,borderWidth:3,tension:.25},
+      {label:'Kapitalstock (K)',data:idx(PK),borderColor:p.fK,pointRadius:0,borderWidth:3,tension:.25},
+      {label:'Arbeitsstunden (L)',data:idx(PL),borderColor:p.fL,pointRadius:0,borderWidth:3,tension:.25},
+      {label:'Technischer Fortschritt (A)',data:idx(PA),borderColor:p.fA,pointRadius:0,borderWidth:3,borderDash:[6,4],tension:.25}
+    ]},options:o});
+    note.textContent=`Von 1980 bis 2023 hat sich der Kapitalstock mehr als verdoppelt (×${nf(PK[43]/PK[0],2)}), die geleisteten Arbeitsstunden stiegen um ${nf((PL[43]/PL[0]-1)*100,0)} %. Das BIP wuchs stärker als die Arbeit, aber schwächer als das Kapital.`;
+  } else if(state.fak==='stunde'){
+    t.textContent='Pro Arbeitsstunde, Index 1980 = 100';
+    const o=baseOpts(p,'Index');
+    o.plugins.tooltip.callbacks.label=c=>' '+c.dataset.label+': '+nf(c.parsed.y,0);
+    make('cFak',{type:'line',data:{labels:PYEARS,datasets:[
+      {label:'Arbeitsproduktivität (BIP pro Stunde)',data:idx(PY.map((y,i)=>y/PL[i])),borderColor:p.C,pointRadius:0,borderWidth:3,tension:.25},
+      {label:'Kapitalintensität (Kapital pro Stunde)',data:idx(PK.map((k,i)=>k/PL[i])),borderColor:p.fK,pointRadius:0,borderWidth:3,tension:.25},
+      {label:'Technischer Fortschritt (A)',data:idx(PA),borderColor:p.fA,pointRadius:0,borderWidth:3,borderDash:[6,4],tension:.25}
+    ]},options:o});
+    note.textContent=`Pro Arbeitsstunde wird heute ${nf((PY[43]/PL[43])/(PY[0]/PL[0])*100-100,0)} % mehr produziert als 1980. Zwei Gründe: Jede Stunde wird mit fast doppelt so viel Kapital geleistet (+${nf(((PK[43]/PL[43])/(PK[0]/PL[0])-1)*100,0)} %), und der technische Fortschritt stieg um ${nf((PA[43]/PA[0]-1)*100,0)} %.`;
+  } else {
+    t.textContent='Wachstumszerlegung: Beiträge zum BIP-Wachstum, % pro Jahr';
+    const o=baseOpts(p,'% pro Jahr');
+    o.interaction={mode:'index',intersect:false};
+    o.scales.x.stacked=true;o.scales.y.stacked=true;
+    o.scales.y.ticks.callback=v=>nf(v,1)+' %';
+    o.plugins.tooltip.callbacks.label=c=>' '+c.dataset.label+': '+nf(c.parsed.y,2)+' %';
+    const bar=(label,key,col)=>({label,data:PERIODS.map(x=>key==='gK'?ALPHA*x.gK:key==='gL'?(1-ALPHA)*x.gL:x.gA),backgroundColor:col,stack:'f',borderRadius:root.dataset.variant==='b'?4:0});
+    make('cFak',{type:'bar',data:{labels:PERIODS.map(x=>x.lbl),datasets:[
+      bar('Beitrag Kapital (α · K)','gK',p.fK),
+      bar('Beitrag Arbeit ((1−α) · L)','gL',p.fL),
+      bar('Technischer Fortschritt (A)','gA',p.fA),
+      {type:'line',label:'BIP-Wachstum',data:PERIODS.map(x=>x.gY),stack:'y',borderColor:p.text,backgroundColor:p.text,showLine:false,pointRadius:7,pointHoverRadius:9,pointStyle:'rectRot'}
+    ]},options:o});
+    note.textContent=`Über die ganze Periode 1980–2023 wuchs das BIP um ${nf(TOT.gY,2)} % pro Jahr. Davon kamen ${nf(ALPHA*TOT.gK,2)} Prozentpunkte vom Kapital, ${nf((1-ALPHA)*TOT.gL,2)} von der Arbeit und ${nf(TOT.gA,2)} vom technischen Fortschritt. In den 1990er-Jahren stagnierte der technische Fortschritt fast.`;
+  }
+}
+
+/* ---------- Faktor-Karten & Rechner ---------- */
+function factorCards(p){
+  document.getElementById('factors').innerHTML=[
+    ['K','Kapitalstock',p.fK,'×'+nf(PK[43]/PK[0],2),'Maschinen, Gebäude, Infrastruktur, Software. Wächst durch Investitionen und schrumpft durch Abschreibungen.'],
+    ['L','Arbeit',p.fL,(PL[43]>PL[0]?'+':'')+nf((PL[43]/PL[0]-1)*100,0)+' %',`Erwerbstätige ${nf(PE[0],1)} → ${nf(PE[43],1)} Mio. (+${nf((PE[43]/PE[0]-1)*100,0)} %), aber Stunden pro Person ${nf(PH[0])} → ${nf(PH[43])} (${nf((PH[43]/PH[0]-1)*100,0)} %).`],
+    ['A','Technischer Fortschritt',p.fA,'+'+nf((PA[43]/PA[0]-1)*100,0)+' %','Nicht direkt messbar: der Teil des Wachstums, den Kapital und Arbeit nicht erklären (Solow-Residuum).']
+  ].map(f=>`<div class="factor" style="--fc:${f[2]}"><h4>${f[1]} (${f[0]})</h4><div class="val">${f[3]}</div><p>1980–2023 · ${f[4]}</p></div>`).join('');
+}
+const sgn=(v,d=2)=>(v>0?'+':v<0?'−':'±')+nf(Math.abs(v),d);
+function calc(){
+  const p=palette();
+  const k=+document.getElementById('gK').value,l=+document.getElementById('gL').value,a=+document.getElementById('gA').value;
+  document.getElementById('oK').textContent=sgn(k)+' %';document.getElementById('oL').textContent=sgn(l)+' %';document.getElementById('oA').textContent=sgn(a)+' %';
+  const ck=ALPHA*k,cl=(1-ALPHA)*l,ca=a,y=ck+cl+ca;
+  document.getElementById('gY').textContent=sgn(y)+' % pro Jahr';
+  const pos=[[ck,p.fK],[cl,p.fL],[ca,p.fA]].filter(x=>x[0]>0),sum=pos.reduce((s,x)=>s+x[0],0)||1;
+  document.getElementById('stackBar').innerHTML=pos.map(x=>`<i style="width:${x[0]/sum*100}%;background:${x[1]}"></i>`).join('');
+  const r=(col,lbl,v)=>`<tr><td><span class="sw" style="background:${col}"></span>${lbl}</td><td class="num">${sgn(v)} Pp.</td></tr>`;
+  document.getElementById('tCalc').innerHTML=r(p.fK,'Kapital: 0,35 × '+sgn(k)+' %',ck)+r(p.fL,'Arbeit: 0,65 × '+sgn(l)+' %',cl)+r(p.fA,'Technischer Fortschritt',ca)+`<tr class="total"><td>BIP-Wachstum</td><td class="num">${sgn(y)} %</td></tr>`;
+  ['K','L','A'].forEach(x=>document.getElementById('sw'+x).style.background=p['f'+x]);
+}
+['gK','gL','gA'].forEach(id=>document.getElementById(id).addEventListener('input',calc));
+document.getElementById('presets').innerHTML=PERIODS.map((x,i)=>`<button type="button" data-i="${i}">${x.lbl}</button>`).join('');
+document.querySelectorAll('#presets button').forEach(b=>b.addEventListener('click',()=>{
+  const x=PERIODS[+b.dataset.i];
+  document.getElementById('gK').value=x.gK.toFixed(2);document.getElementById('gL').value=x.gL.toFixed(2);document.getElementById('gA').value=x.gA.toFixed(2);calc();
+}));
+
+/* ---------- Tabellen je Jahr ---------- */
+function row(col,label,val,max,neg){
+  const w=Math.min(100,Math.abs(val)/max*100);
+  return `<tr><td><span class="sw" style="background:${col}"></span>${label}</td><td style="width:30%"><div class="bar"><i style="width:${w}%;background:${col}"></i></div></td><td class="num">${neg?'−':''}${nf(Math.abs(val),1)} %</td></tr>`;
+}
+function tableVer(y){
+  const p=palette(),i=at(y);
+  const nx=S.X[i]-S.M[i];
+  document.getElementById('tVer').innerHTML=
+   row(p.C,'Privater Konsum',S.C[i],80)+row(p.G,'Staatskonsum',S.G[i],80)+row(p.I,'Investitionen',S.I[i],80)+
+   row(p.X,'Exporte',S.X[i],80)+row(p.M,'Importe',S.M[i],80,true)+row(p.muted,'Vorratsveränd. & Rest',S.V[i],80,S.V[i]<0)+
+   `<tr class="total"><td colspan="2">BIP ${y}</td><td class="num">100,0 %</td></tr>`+
+   `<tr><td colspan="3" class="note" style="border:0;padding-top:.5rem">Nettoexporte (X − M): <b>${pct(nx)}</b> des BIP · reales BIP-Wachstum ${y}: <b>${i?pct(GDP_G[i]):'–'}</b></td></tr>`;
+}
+function setYear(which,y){
+  document.getElementById('yVer').value=y;document.getElementById('oVer').textContent=y;tableVer(+y);
+}
+document.getElementById('yVer').addEventListener('input',e=>setYear('ver',+e.target.value));
+
+function drawAll(){
+  if(typeof Chart==='undefined')return;
+  const p=palette();setFormulaColors(p);
+  drawBip(p);drawKopf(p);drawVer(p);drawFak(p);factorCards(p);calc();
+  tableVer(+document.getElementById('yVer').value);
+}
+
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  const c=b.dataset.chart;state[c]=b.dataset.mode;
+  b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));
+  const p=palette();({bip:drawBip,kopf:drawKopf,ver:drawVer,fak:drawFak})[c](p);
+}));
+
+/* ---------- Variante & Beamer ---------- */
+const store={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+function setVariant(v){
+  root.dataset.variant=v;store.set('bip-variant',v);
+  document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.variant===v?'true':'false'));
+  drawAll();
+}
+function setBeamer(on){
+  root.dataset.beamer=on?'on':'off';store.set('bip-beamer',on?'on':'off');
+  document.getElementById('beamerBtn').setAttribute('aria-pressed',on?'true':'false');
+  document.getElementById('fsBtn').hidden=!on||!document.documentElement.requestFullscreen;
+  drawAll();
+}
+document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>setVariant(b.dataset.variant)));
+document.getElementById('beamerBtn').addEventListener('click',()=>setBeamer(root.dataset.beamer!=='on'));
+document.getElementById('fsBtn').addEventListener('click',()=>{
+  if(document.fullscreenElement){document.exitFullscreen().catch(()=>{})}else{document.documentElement.requestFullscreen().catch(()=>{})}
+});
+
+/* Pfeiltasten im Beamer-Modus: nächster / vorheriger Abschnitt */
+const SECS=[...document.querySelectorAll('main section')];
+document.addEventListener('keydown',e=>{
+  if(root.dataset.beamer!=='on')return;
+  if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;
+  if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft'&&e.key!=='PageDown'&&e.key!=='PageUp')return;
+  e.preventDefault();
+  const y=window.scrollY+90;
+  let cur=0;SECS.forEach((s,i)=>{if(s.offsetTop<=y)cur=i});
+  const next=(e.key==='ArrowRight'||e.key==='PageDown')?Math.min(cur+1,SECS.length-1):Math.max(cur-1,0);
+  SECS[next].scrollIntoView({behavior:'smooth',block:'start'});
+});
+
+/* Aktiver Abschnitt in der Navigation */
+const links=[...document.querySelectorAll('nav.secnav a')];
+function markActive(){
+  const y=window.scrollY+120;let cur=0;SECS.forEach((s,i)=>{if(s.offsetTop<=y)cur=i});
+  links.forEach((a,i)=>a.classList.toggle('active',i===cur));
+}
+window.addEventListener('scroll',markActive,{passive:true});markActive();
+
+/* Theme-Wechsel → Diagramme neu zeichnen */
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',drawAll);
+new MutationObserver(m=>{if(m.some(x=>x.attributeName==='data-theme'))drawAll()}).observe(root,{attributes:true});
+
+/* ---------- Quiz ---------- */
+const QUIZ=[
+ {q:'Was unterscheidet das reale vom nominalen BIP?',o:['Beim realen BIP sind Preisänderungen (Inflation) herausgerechnet.','Das reale BIP enthält nur die Industrie, nicht die Dienstleistungen.','Das reale BIP wird in Euro statt in Franken gemessen.','Das reale BIP zieht die Importe nicht ab.'],a:0,e:'Das reale BIP misst die Menge der produzierten Güter zu konstanten Preisen. So sieht man, ob wirklich mehr produziert wurde.'},
+ {q:'In welchem Jahr ging das reale BIP der Schweiz seit 1980 am stärksten zurück?',o:['1993','2009','2020','2015'],a:2,e:`2020 schrumpfte das reale BIP wegen der Corona-Pandemie um ${nf(Math.abs(GDP_G[at(2020)]),1)} %. 2009 (Finanzkrise) waren es ${nf(Math.abs(GDP_G[at(2009)]),1)} %, 1993 ${nf(Math.abs(GDP_G[at(1993)]),1)} %.`},
+ {q:`2023 wuchs das reale BIP um ${nf(GDP_G[at(2023)],1)} %, das reale BIP pro Kopf sank aber um ${nf(Math.abs(PC_G[at(2023)]),1)} %. Wie ist das möglich?`,o:['Die Preise sind stärker gestiegen als das BIP.','Die Bevölkerung ist stärker gewachsen als das BIP.','Die Exporte sind gesunken.','Das BIP pro Kopf wird nominal gemessen.'],a:1,e:`Die Bevölkerung wuchs 2023 um ${nf(POP_G[at(2023)],1)} %, also schneller als das BIP. Pro Person stand darum etwas weniger zur Verfügung.`},
+ {q:'Welches ist auf der Verwendungsseite der grösste inländische Posten?',o:['Staatskonsum','Investitionen','Privater Konsum','Vorratsveränderungen'],a:2,e:`Der private Konsum der Haushalte macht rund die Hälfte des BIP aus (2025: ${nf(S.C[L],1)} %).`},
+ {q:'Was bedeutet es, dass die Exporte der Schweiz grösser sind als die Importe?',o:['Die Nettoexporte (X − M) sind positiv und erhöhen das BIP.','Das BIP ist kleiner als der private Konsum.','Die Schweiz produziert nur für das Ausland.','Die Importe werden zum BIP addiert.'],a:0,e:`Die Schweiz hat einen Exportüberschuss: 2025 lagen die Nettoexporte bei ${pct(S.X[L]-S.M[L])} des BIP.`},
+ {q:'Wie wird der technische Fortschritt (A) in der Wachstumsrechnung bestimmt?',o:['Man zählt die Anzahl neuer Patente.','Als Restgrösse: der Teil des BIP-Wachstums, den Kapital und Arbeit nicht erklären.','Man misst die Ausgaben für Computer.','Er entspricht dem Wachstum des Kapitalstocks.'],a:1,e:'Technischer Fortschritt lässt sich nicht direkt messen. Er wird als «Solow-Residuum» berechnet: BIP-Wachstum minus die Beiträge von Kapital und Arbeit.'},
+ {q:'Welcher Faktor trug in der Schweiz 1980–2023 am meisten zum BIP-Wachstum bei?',o:['Arbeit','Kapital','Technischer Fortschritt','Alle drei genau gleich viel'],a:1,e:`Von ${nf(TOT.gY,2)} % Wachstum pro Jahr kamen ${nf(ALPHA*TOT.gK,2)} Prozentpunkte vom Kapital, ${nf((1-ALPHA)*TOT.gL,2)} von der Arbeit und ${nf(TOT.gA,2)} vom technischen Fortschritt.`},
+ {q:'Die Zahl der Erwerbstätigen stieg 1980–2023 um rund zwei Drittel, die Arbeitsstunden aber nur um rund 40 %. Warum?',o:['Es gab mehr Arbeitslose.','Die Erwerbstätigen arbeiten im Durchschnitt weniger Stunden pro Jahr, z. B. wegen Teilzeit.','Maschinen zählen auch als Erwerbstätige.','Die Bevölkerung ist geschrumpft.'],a:1,e:`Die durchschnittliche Jahresarbeitszeit pro erwerbstätiger Person sank von ${nf(PH[0])} auf ${nf(PH[43])} Stunden, unter anderem wegen mehr Teilzeitarbeit und längerer Ferien.`}
+];
+let answered={};
+function renderQuiz(){
+  answered={};
+  document.getElementById('quizBox').innerHTML=QUIZ.map((x,i)=>`<div class="q" id="q${i}"><h3><span class="qn">${i+1}/${QUIZ.length}</span>${x.q}</h3><div class="opts">${x.o.map((o,j)=>`<button type="button" data-q="${i}" data-o="${j}">${o}</button>`).join('')}</div><p class="fb" hidden aria-live="polite"></p></div>`).join('');
+  document.querySelectorAll('.opts button').forEach(b=>b.addEventListener('click',()=>answer(+b.dataset.q,+b.dataset.o)));
+  updateScore();
+}
+function answer(i,j){
+  if(i in answered)return;
+  const x=QUIZ[i],ok=j===x.a;answered[i]=ok;
+  const box=document.getElementById('q'+i);
+  box.querySelectorAll('button').forEach((b,k)=>{b.disabled=true;if(k===x.a)b.classList.add('right');else if(k===j)b.classList.add('wrong');if(k===x.a)b.textContent='✓ '+b.textContent;if(k===j&&!ok)b.textContent='✗ '+b.textContent;});
+  const fb=box.querySelector('.fb');fb.hidden=false;fb.className='fb '+(ok?'ok':'no');
+  fb.innerHTML=`<strong>${ok?'✓ Richtig.':'✗ Nicht ganz.'}</strong> ${x.e}`;
+  updateScore();
+}
+function updateScore(){
+  const n=Object.keys(answered).length,r=Object.values(answered).filter(Boolean).length;
+  document.getElementById('score').textContent=n?`${r} von ${n} beantworteten Fragen richtig`+(n===QUIZ.length?` – Quiz abgeschlossen.`:'.'):'';
+}
+document.getElementById('quizReset').addEventListener('click',renderQuiz);
+
+/* ---------- Start ---------- */
+const v0=store.get('bip-variant')==='b'?'b':'a';
+root.dataset.variant=v0;
+document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.variant===v0?'true':'false'));
+const b0=store.get('bip-beamer')==='on';
+root.dataset.beamer=b0?'on':'off';
+document.getElementById('beamerBtn').setAttribute('aria-pressed',b0?'true':'false');
+document.getElementById('fsBtn').hidden=!b0||!document.documentElement.requestFullscreen;
+renderQuiz();
+drawAll();
+})();
+</script>
+
+</body></html>

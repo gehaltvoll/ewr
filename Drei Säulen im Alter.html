@@ -1,0 +1,395 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!-- Entscheidungen:
+Einsatztyp: Lernmaterial EWR/Recht für Schüler:innen, Gerät gemischt.
+Funktion: Rechner + Schritte. Eingaben: letzter Lohn, Beitragslücken, AHV-Vorbezug, Pensionskassenguthaben (Schätzung BVG-Minimum oder eigene Eingabe),
+  Umwandlungssatz (6,8 / 6,0 / 5,5 / 5,0 % oder frei), Rente oder Kapital, Säule 3a, Miete, Mietzins-/Prämienregion, übriges Vermögen.
+  Fünf Schritte: 1. AHV (Skala 44, Lücken, Vorbezug 6,8 %/Jahr, 13. Rente) · 2. Pensionskasse (Sparprozess, Umwandlungssatz-Vergleich, Rente vs. Kapitalverzehr)
+  · 3. Säule 3a · 4. Renteneinkommen gesamt und Ersatzquote · 5. Ergänzungsleistungen (vereinfachte Berechnung).
+Werte: AHV 2026 (1'260/2'520, Skala 44, 13. Rente = 1/12 der Jahresrente im Dezember); BVG 2026 (Koordinationsabzug 26'460, koord. Lohn 3'780–64'260,
+  Altersgutschriften Art. 16 BVG, Mindestzins 1,25 %, Umwandlungssatz 6,8 %); EL nach Merkblatt 5.01 (Stand 2025): Lebensbedarf 20'670, Mietzins-Maxima
+  18'900 / 18'300 / 16'680, Freibetrag 30'000, Verzehr 1/10, Vermögensschwelle 100'000; Durchschnittsprämien ZH 2026: 7'680 / 7'008 / 6'528;
+  13. AHV-Rente nicht als EL-Einnahme angerechnet.
+Vereinfachungen: Einzelperson, konstanter Lohn, AHV-Durchschnittseinkommen = heutiger Jahreslohn, PK-Schätzung nur BVG-Minimum ab 25,
+  3a und Kapitalbezug als Vermögen in der EL, keine Steuern, keine Teuerung.
+Datenhaltung: keine. Kein Export.
+Design: eine Variante, EWR freundlich-lebendig: Nord-Palette, Open Sans + Google Sans Code für Beträge, Überschriften 700, runde Karten,
+  feste Farbe je Säule (AHV nord10, Pensionskasse nord14, 3a nord15, EL nord13). Hell/Dunkel folgt System.
+-->
+<title>Drei Säulen im Alter</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400;600&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: Kopf mit Ergebnis-Stapel, Eingabekarte, dann fünf nummerierte Schritte, je Säule eine Farbe. */
+:root{
+  --nord0:#2E3440;--nord1:#3B4252;--nord2:#434C5E;--nord3:#4C566A;--nord4:#D8DEE9;--nord5:#E5E9F0;--nord6:#ECEFF4;
+  --nord7:#8FBCBB;--nord8:#88C0D0;--nord9:#81A1C1;--nord10:#5E81AC;--nord11:#BF616A;--nord12:#D08770;--nord13:#EBCB8B;--nord14:#A3BE8C;--nord15:#B48EAD;
+  --bg:var(--nord6);--surface:#fff;--surface-2:var(--nord5);--line:var(--nord4);--text:var(--nord0);--muted:var(--nord3);
+  --accent:var(--nord10);--accent-soft:var(--nord9);
+  --c-ahv:var(--nord10);--c-pk:var(--nord14);--c-3a:var(--nord15);--c-el:var(--nord13);--c-cut:var(--nord11);--c-ref:var(--nord3);
+  --radius:16px;--radius-sm:10px;--shadow:0 1px 2px rgba(46,52,64,.06),0 6px 18px rgba(46,52,64,.07);
+  --font:"Open Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"Google Sans Code",ui-monospace,"Cascadia Code",Consolas,"SF Mono",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--bg:var(--nord0);--surface:var(--nord1);--surface-2:var(--nord2);--line:var(--nord2);--text:var(--nord6);--muted:var(--nord4);--accent:var(--nord8);--c-ref:var(--nord4);--shadow:none;color-scheme:dark}
+}
+:root[data-theme="dark"]{--bg:var(--nord0);--surface:var(--nord1);--surface-2:var(--nord2);--line:var(--nord2);--text:var(--nord6);--muted:var(--nord4);--accent:var(--nord8);--c-ref:var(--nord4);--shadow:none;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:17px;line-height:1.6;margin:0}
+.wrap{max-width:1100px;margin:0 auto;padding-block:22px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:22px}
+h1,h2,h3{text-wrap:balance;line-height:1.25;margin:0}
+h1{font-size:2rem;font-weight:700}
+h2{font-size:1.4rem;font-weight:700}
+h3{font-size:1rem;font-weight:600}
+p{margin:0;max-width:70ch}
+.muted{color:var(--muted)}
+a{color:var(--accent);text-decoration:underline}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
+.card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;display:flex;flex-direction:column;gap:14px;min-width:0}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .card{border:1px solid var(--nord2)}}
+:root[data-theme="dark"] .card{border:1px solid var(--nord2)}
+
+.hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:22px;align-items:end}
+@media (max-width:820px){.hero{grid-template-columns:minmax(0,1fr)}}
+.eyebrow{font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.result{background:var(--nord0);color:var(--nord6);border-radius:var(--radius);padding:20px 22px;display:flex;flex-direction:column;gap:8px}
+.result .k{font-size:.85rem;color:var(--nord4);font-weight:600}
+.result .v{font-family:var(--font-mono);font-size:2.3rem;font-weight:600;line-height:1.1}
+.result .s{font-size:.9rem;color:var(--nord4)}
+.rstack{display:flex;height:16px;border-radius:999px;overflow:hidden;background:var(--nord2)}
+.rstack span{height:100%;transition:width .3s ease}
+.rleg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.84rem;color:var(--nord4)}
+.rleg b{font-family:var(--font-mono);color:var(--nord6)}
+
+/* Eingaben */
+.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px 20px;align-items:end}
+.group{font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;grid-column:1/-1;margin-top:6px;display:flex;gap:8px;align-items:center}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-weight:600;font-size:.88rem}
+.inrow{display:flex;gap:6px;align-items:center}
+.inrow input,.field select{width:100%;min-width:0;padding:6px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg)}
+.inrow input{font-family:var(--font-mono)}
+.unit{color:var(--muted);font-size:.86rem;flex:none}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--bg);max-width:100%;flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:5px 12px;cursor:pointer;font-size:.88rem}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--bg);font-weight:600}
+.hint{font-size:.84rem;color:var(--muted)}
+.dot{width:.85em;height:.85em;border-radius:50%;display:inline-block;flex:none}
+
+/* Schritte */
+.step{display:grid;grid-template-columns:2.6rem minmax(0,1fr);gap:4px 16px}
+.step .no{width:2.4rem;height:2.4rem;border-radius:50%;display:grid;place-items:center;font-family:var(--font-mono);font-weight:600;font-size:1.05rem;color:var(--nord0)}
+.step .body{display:flex;flex-direction:column;gap:12px;min-width:0}
+.calc{font-family:var(--font-mono);font-size:.9rem;background:var(--surface-2);border-radius:var(--radius-sm);padding:10px 14px;white-space:pre-wrap;overflow-x:auto}
+.law{border:2px solid var(--nord10);border-radius:var(--radius-sm);padding:10px 14px;font-size:.93rem}
+.law .src{font-weight:700;color:var(--accent);display:block;margin-bottom:2px}
+.merke{border-radius:var(--radius-sm);padding:10px 14px;background:color-mix(in srgb,var(--nord15) 18%,var(--surface));font-size:.95rem}
+.merke b{display:block}
+.warn{border-radius:var(--radius-sm);padding:10px 14px;background:color-mix(in srgb,var(--nord13) 28%,var(--surface));font-size:.95rem}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:720px){.two{grid-template-columns:minmax(0,1fr)}}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:640px){.kpis{grid-template-columns:minmax(0,1fr)}}
+.kpi{background:var(--surface-2);border-radius:var(--radius-sm);padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi .k{font-size:.82rem;color:var(--muted);font-weight:600}
+.kpi .v{font-family:var(--font-mono);font-size:1.3rem;font-weight:600}
+.kpi .s{font-size:.82rem;color:var(--muted)}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font-family:var(--font);font-size:12px}
+.chart .lbl{fill:var(--text);font-weight:600}
+.chart .grid line{stroke:var(--line)}
+.legendrow{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.86rem;color:var(--muted)}
+.tbl{width:100%;border-collapse:collapse;font-size:.92rem}
+.tbl th,.tbl td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right}
+.tbl th:first-child,.tbl td:first-child{text-align:left}
+.tbl th{font-size:.8rem;color:var(--muted);font-weight:600}
+.tbl td{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.tbl td:first-child{font-family:var(--font)}
+.tbl tr.cur td{background:color-mix(in srgb,var(--nord14) 22%,transparent);font-weight:600}
+.tbl tr.total td{font-weight:700;border-top:2px solid var(--text);border-bottom:0}
+.tabbox{overflow-x:auto}
+.foot{font-size:.84rem;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+@media (prefers-reduced-motion: reduce){.rstack span{transition:none}}
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+      <span class="eyebrow">EWR · Altersvorsorge · Drei-Säulen-System · Stand 2026</span>
+      <h1>Drei Säulen im Alter</h1>
+      <p class="muted">Wovon lebt man nach der Pensionierung? Die AHV sichert das Existenzminimum, die Pensionskasse soll den gewohnten Lebensstandard ermöglichen, die Säule 3a ergänzt. Reicht das alles nicht, gibt es Ergänzungsleistungen.</p>
+    </div>
+    <div class="result" aria-live="polite">
+      <span class="k">Einkommen im Alter pro Monat</span>
+      <span class="v" id="resV"></span>
+      <span class="s" id="resS"></span>
+      <div class="rstack" id="resStack" role="img" aria-label="Zusammensetzung des Renteneinkommens"></div>
+      <div class="rleg" id="resLeg"></div>
+    </div>
+  </header>
+
+  <section class="card" aria-label="Eingaben">
+    <div class="inputs">
+      <div class="group">Erwerbsleben</div>
+      <div class="field"><label for="lohn">Bruttolohn pro Monat vor der Pensionierung</label><div class="inrow"><span class="unit">Fr.</span><input type="number" id="lohn" min="0" step="100" inputmode="numeric"></div><input type="range" id="lohnR" min="2000" max="15000" step="100" aria-label="Bruttolohn, Regler"></div>
+      <div class="field"><label for="n">Monatslöhne pro Jahr</label><select id="n"><option value="13">13</option><option value="12">12</option></select></div>
+
+      <div class="group"><span class="dot" style="background:var(--c-ahv)"></span>1. Säule: AHV</div>
+      <div class="field"><label for="gap">Beitragslücken</label><div class="inrow"><input type="number" id="gap" min="0" max="44" step="1" inputmode="numeric"><span class="unit">Jahre</span></div></div>
+      <div class="field"><label for="vor">Rentenbezug</label><select id="vor"><option value="0">mit 65 (ordentlich)</option><option value="1">mit 64 (1 Jahr Vorbezug)</option><option value="2">mit 63 (2 Jahre Vorbezug)</option></select></div>
+
+      <div class="group"><span class="dot" style="background:var(--c-pk)"></span>2. Säule: Pensionskasse</div>
+      <div class="field"><label for="pkMode">Guthaben mit 65</label><select id="pkMode"><option value="est">schätzen: BVG-Minimum ab Alter 25</option><option value="own">selbst eingeben</option></select></div>
+      <div class="field" id="pkOwnF" hidden><label for="pkOwn">Eigenes Altersguthaben</label><div class="inrow"><span class="unit">Fr.</span><input type="number" id="pkOwn" min="0" step="1000" inputmode="numeric"></div></div>
+      <div class="field"><label for="uws">Umwandlungssatz</label><div class="inrow"><input type="number" id="uws" min="3" max="8" step="0.1" inputmode="decimal"><span class="unit">%</span></div>
+        <div class="seg" role="group" aria-label="Umwandlungssatz wählen" id="uwsSeg"><button type="button" data-u="6.8">6,8</button><button type="button" data-u="6">6,0</button><button type="button" data-u="5.5">5,5</button><button type="button" data-u="5">5,0</button></div></div>
+      <div class="field"><label>Bezug</label><div class="seg" role="group" aria-label="Rente oder Kapital"><button type="button" id="bRente" aria-pressed="true">Rente</button><button type="button" id="bKap" aria-pressed="false">Kapital</button></div></div>
+
+      <div class="group"><span class="dot" style="background:var(--c-3a)"></span>3. Säule: gebundene Vorsorge 3a</div>
+      <div class="field"><label for="s3a">Einzahlung pro Jahr</label><div class="inrow"><span class="unit">Fr.</span><input type="number" id="s3a" min="0" max="7258" step="100" inputmode="numeric"></div></div>
+      <div class="field"><label for="s3aJ">während</label><div class="inrow"><input type="number" id="s3aJ" min="0" max="45" step="1" inputmode="numeric"><span class="unit">Jahren</span></div></div>
+      <div class="field"><label for="ret">Rendite pro Jahr (3a und Kapital)</label><div class="inrow"><input type="number" id="ret" min="0" max="6" step="0.25" inputmode="decimal"><span class="unit">%</span></div></div>
+
+      <div class="group"><span class="dot" style="background:var(--c-el)"></span>Lebenssituation im Alter (für die Ergänzungsleistungen)</div>
+      <div class="field"><label for="miete">Miete inkl. Nebenkosten pro Monat</label><div class="inrow"><span class="unit">Fr.</span><input type="number" id="miete" min="0" step="50" inputmode="numeric"></div></div>
+      <div class="field"><label for="region">Wohnort</label><select id="region"><option value="1">Region 1: Grosszentrum (z. B. Stadt Zürich)</option><option value="2">Region 2: Stadt</option><option value="3">Region 3: Land</option></select></div>
+      <div class="field"><label for="verm">Übriges Vermögen (Sparkonto usw.)</label><div class="inrow"><span class="unit">Fr.</span><input type="number" id="verm" min="0" step="1000" inputmode="numeric"></div></div>
+    </div>
+  </section>
+
+  <section class="card step" aria-labelledby="h1s">
+    <span class="no" style="background:var(--c-ahv);color:var(--nord6)">1</span>
+    <div class="body">
+      <h2 id="h1s">AHV: die Grundsicherung</h2>
+      <p>Die AHV-Rente hängt vom durchschnittlichen Einkommen und den Beitragsjahren ab (siehe Artefakt «So entsteht die AHV-Rente»). Sie liegt zwischen Fr. 1'260 und Fr. 2'520 pro Monat. Gekürzt wird sie durch Beitragslücken (je 1/44) und durch einen Vorbezug (6,8 % pro Jahr, lebenslang).</p>
+      <div class="calc" id="c1"></div>
+      <div class="two">
+        <div class="law"><span class="src">Art. 112 Abs. 2 lit. b BV (sinngemäss)</span>Die AHV-Renten sollen den Existenzbedarf angemessen decken.</div>
+        <div class="law"><span class="src">Art. 40 AHVG (sinngemäss)</span>Die Altersrente kann ein oder zwei Jahre vorbezogen werden. Sie wird dann lebenslang gekürzt.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card step" aria-labelledby="h2s">
+    <span class="no" style="background:var(--c-pk)">2</span>
+    <div class="body">
+      <h2 id="h2s">Pensionskasse: vom Guthaben zur Rente</h2>
+      <p>In der Pensionskasse spart jede Person ihr eigenes Altersguthaben an (Kapitaldeckungsverfahren). Bei der Pensionierung wird das Guthaben mit dem <b>Umwandlungssatz</b> in eine lebenslange Rente umgerechnet: Jahresrente = Altersguthaben × Umwandlungssatz.</p>
+      <svg class="chart" id="pkChart" viewBox="0 0 680 270" role="img" aria-labelledby="h2s"></svg>
+      <div class="legendrow"><span><span class="dot" style="background:var(--c-pk);margin-right:6px"></span>Altersguthaben</span><span><span class="dot" style="background:var(--c-cut);margin-right:6px"></span>Kapital nach Bezug, wenn man sich die gleiche Summe wie die Rente auszahlt</span></div>
+      <div class="calc" id="c2"></div>
+      <h3>Umwandlungssatz im Vergleich</h3>
+      <div class="tabbox"><table class="tbl" id="uwsTab"></table></div>
+      <div class="two">
+        <div class="law"><span class="src">Art. 14 BVG (sinngemäss)</span>Für das obligatorische Altersguthaben beträgt der Mindestumwandlungssatz 6,8 %. Für den überobligatorischen Teil legt die Pensionskasse den Satz selbst fest.</div>
+        <div class="law"><span class="src">Art. 113 Abs. 2 lit. a BV (sinngemäss)</span>Die berufliche Vorsorge ermöglicht zusammen mit der AHV die Fortsetzung der gewohnten Lebenshaltung in angemessener Weise.</div>
+      </div>
+      <div class="merke"><b>Rente oder Kapital?</b>Die Rente wird bis zum Tod bezahlt, auch wenn man 100 wird. Das Kapital gehört einem selbst und kann vererbt werden, aber es kann aufgebraucht sein. Das Risiko eines langen Lebens trägt dann die versicherte Person. Kapitalbezüge werden einmalig zu einem reduzierten Satz besteuert, Renten jedes Jahr als Einkommen.</div>
+    </div>
+  </section>
+
+  <section class="card step" aria-labelledby="h3s">
+    <span class="no" style="background:var(--c-3a)">3</span>
+    <div class="body">
+      <h2 id="h3s">Säule 3a: freiwilliges Sparen</h2>
+      <p>Einzahlungen in die Säule 3a sind bis Fr. 7'258 pro Jahr vom steuerbaren Einkommen abziehbar. Das Geld wird bei der Pensionierung als Kapital ausbezahlt. Hier wird angenommen, dass es gleichmässig über 20 Jahre verbraucht wird.</p>
+      <div class="calc" id="c3"></div>
+    </div>
+  </section>
+
+  <section class="card step" aria-labelledby="h4s">
+    <span class="no" style="background:var(--nord8)">4</span>
+    <div class="body">
+      <h2 id="h4s">Alles zusammen: reicht es?</h2>
+      <p>Als Faustregel braucht man im Alter etwa 60 bis 80 % des letzten Bruttolohns, um den Lebensstandard zu halten, weil Sozialversicherungsbeiträge und Sparen wegfallen. Das Verhältnis Renteneinkommen zu letztem Lohn heisst <b>Ersatzquote</b>.</p>
+      <svg class="chart" id="sumChart" viewBox="0 0 680 170" role="img" aria-labelledby="h4s"></svg>
+      <div class="kpis" id="kpis"></div>
+      <div class="merke" id="m4"></div>
+    </div>
+  </section>
+
+  <section class="card step" aria-labelledby="h5s">
+    <span class="no" style="background:var(--c-el)">5</span>
+    <div class="body">
+      <h2 id="h5s">Ergänzungsleistungen: das letzte Netz</h2>
+      <p>Wenn Renten und Vermögen die minimalen Lebenskosten nicht decken, besteht Anspruch auf Ergänzungsleistungen (EL). Sie sind keine Sozialhilfe, sondern ein Rechtsanspruch und müssen nicht zurückbezahlt werden. Die EL decken die Differenz zwischen anerkannten Ausgaben und anrechenbaren Einnahmen.</p>
+      <div class="two">
+        <div class="tabbox"><table class="tbl" id="elA"></table></div>
+        <div class="tabbox"><table class="tbl" id="elE"></table></div>
+      </div>
+      <div class="calc" id="c5"></div>
+      <div class="law"><span class="src">Art. 4, 9, 10 und 11 ELG (sinngemäss)</span>Anspruch haben Personen mit AHV-Rente, deren Vermögen höchstens Fr. 100'000 beträgt. Die jährliche EL entspricht dem Betrag, um den die anerkannten Ausgaben die anrechenbaren Einnahmen übersteigen. Vom Vermögen über Fr. 30'000 wird bei Altersrentnern jedes Jahr ein Zehntel als Einnahme angerechnet. Die 13. AHV-Rente zählt nicht als Einnahme.</div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>Werte: AHV 2026 (Skala 44, 13. Rente); BVG 2026 (Koordinationsabzug Fr. 26'460, Altersgutschriften Art. 16 BVG, Mindestzins 1,25 %, Umwandlungssatz 6,8 %); EL gemäss <a href="https://ahv-iv.ch/p/5.01.d" target="_blank" rel="noopener">Merkblatt 5.01</a> (Lebensbedarf Fr. 20'670, Mietzins-Höchstbeträge Fr. 18'900 / 18'300 / 16'680 für Alleinlebende), <a href="https://www.bsv.admin.ch/dam/de/sd-web/juMQ1SfoExDq/DE%20Anhang%20(Art.%203)%20Durchschnittspr%C3%A4mien%202026.pdf" target="_blank" rel="noopener">Durchschnittsprämien Kanton Zürich 2026</a>, <a href="https://www.bsv.admin.ch/de/umsetzung-13-ahv-rente" target="_blank" rel="noopener">BSV zur 13. AHV-Rente</a>.</span>
+    <span>Vereinfacht: Einzelperson, konstanter Lohn in heutigen Franken, AHV-Durchschnittseinkommen = letzter Jahreslohn, PK-Schätzung nur BVG-Minimum, keine Steuern und keine Teuerung, EL ohne kantonale Zusatzleistungen und Krankheitskosten. Unverbindliche Lernhilfe; Gesetzesartikel sinngemäss.</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+const $ = id => document.getElementById(id);
+const R0=1260, RMAX=2520, STEP=1512, FULL=44;
+const BVG={koord:26460,kMin:3780,kMax:64260,min:22680,zins:1.25};
+const EL={leb:20670, miete:{1:18900,2:18300,3:16680}, kk:{1:7680,2:7008,3:6528}, frei:30000, schwelle:100000, verzehr:10};
+const S={lohn:6500,n:13,gap:0,vor:0,pkMode:"est",pkOwn:400000,uws:6.8,kap:false,s3a:3000,s3aJ:30,ret:1.5,miete:1500,region:2,verm:20000};
+
+const fmt=(n,d=0)=>{const neg=n<0;const s=(Math.round(Math.abs(n)*10**d)/10**d).toFixed(d);const [a,b]=s.split(".");return (neg?"−":"")+a.replace(/\B(?=(\d{3})+(?!\d))/g,"'")+(b?"."+b:"");};
+const pc=(n,d=1)=>fmt(n,d).replace(".",",")+" %";
+const ags=a=>a<25?0:a<35?7:a<45?10:a<55?15:18;
+
+function ahvVoll(E){ if(E>=72*R0) return RMAX; const Es=Math.max(12*R0,Math.ceil(E/STEP)*STEP), e=Es/12;
+  const r=Es<=36*R0?0.74*R0+0.26*e:1.04*R0+0.16*e; return Math.round(Math.min(RMAX,Math.max(R0,r))); }
+function pkEstimate(jahr){
+  const koord = jahr>=BVG.min ? Math.min(Math.max(Math.min(jahr,BVG.koord+BVG.kMax)-BVG.koord,BVG.kMin),BVG.kMax) : 0;
+  let g=0; const path=[{age:25,g:0}];
+  for(let a=25;a<65;a++){ g = g*(1+BVG.zins/100) + koord*ags(a)/100; path.push({age:a+1,g}); }
+  return {koord,g,path};
+}
+function annuity(K,years,r){ const i=r/100; return i===0? K/years : K*i/(1-Math.pow(1+i,-years)); }
+function drawdown(K,yearly,r){ const path=[{age:65,g:K}]; let g=K,a=65; while(g>0 && a<105){ g=g*(1+r/100)-yearly; a++; path.push({age:a,g:Math.max(0,g)}); } return {path, empty: g<=0 ? a : null}; }
+
+function compute(){
+  const jahr=S.lohn*S.n;
+  // AHV
+  const J=FULL-S.gap, voll=ahvVoll(jahr), teil=Math.round(voll*J/FULL);
+  const kuerz=S.vor*6.8, ahvM=Math.round(teil*(1-kuerz/100));
+  const ahvYear=ahvM*13;
+  // PK
+  const est=pkEstimate(jahr);
+  const K = S.pkMode==="est" ? est.g : S.pkOwn;
+  const pkYear = K*S.uws/100, pkM = pkYear/12;
+  const dd = drawdown(K, pkYear, S.ret);
+  // 3a
+  let k3=0; for(let y=0;y<S.s3aJ;y++) k3 = k3*(1+S.ret/100) + S.s3a;
+  const a3Year = annuity(k3,20,S.ret), a3M=a3Year/12;
+  // Einkommen
+  const parts={ahv:ahvYear/12, pk:pkM, s3a:a3M};
+  // EL
+  const vermEL = S.verm + k3 + (S.kap ? K : 0);
+  const ausgaben = {leb:EL.leb, miete:Math.min(S.miete*12, EL.miete[S.region]), kk:EL.kk[S.region]};
+  const ausgTot = ausgaben.leb+ausgaben.miete+ausgaben.kk;
+  const verzehr = Math.max(0, vermEL-EL.frei)/EL.verzehr;
+  const einnahmen = {ahv:ahvM*12, pk: S.kap?0:pkYear, verzehr};
+  const einTot = einnahmen.ahv+einnahmen.pk+einnahmen.verzehr;
+  const elOk = vermEL <= EL.schwelle;
+  const elYear = elOk ? Math.max(0, ausgTot-einTot) : 0;
+  parts.el = elYear/12;
+  const total = parts.ahv+parts.pk+parts.s3a+parts.el;
+  return {jahr,J,voll,teil,kuerz,ahvM,ahvYear,est,K,pkYear,pkM,dd,k3,a3Year,a3M,parts,total,vermEL,ausgaben,ausgTot,einnahmen,einTot,elOk,elYear,verzehr};
+}
+
+const COL={ahv:"--c-ahv",pk:"--c-pk",s3a:"--c-3a",el:"--c-el"};
+const NAME={ahv:"AHV (inkl. 13. Rente)",pk:"Pensionskasse",s3a:"Säule 3a",el:"Ergänzungsleistungen"};
+
+function pkChart(c){
+  const svg=$("pkChart"),W=680,H=270,L=62,Rr=16,T=22,B=36,pw=W-L-Rr,ph=H-T-B;
+  const amin=25, amax=100, X=a=>L+(a-amin)/(amax-amin)*pw;
+  const pts = S.pkMode==="est" ? c.est.path : [{age:25,g:0},{age:65,g:c.K}];
+  const gmax = Math.max(c.K,1)*1.12, Y=g=>T+ph-g/gmax*ph;
+  let s='<g class="grid">';
+  const step = gmax>800000?200000:gmax>300000?100000:50000;
+  for(let g=0; g<=gmax; g+=step) s+=`<line x1="${L}" x2="${W-Rr}" y1="${Y(g)}" y2="${Y(g)}"/><text x="${L-6}" y="${Y(g)+4}" text-anchor="end">${g>=1e6?fmt(g/1e6,1).replace(".",",")+" Mio.":fmt(g/1000)+"k"}</text>`;
+  for(const a of [25,35,45,55,65,75,85,95]) s+=`<text x="${X(a)}" y="${H-B+18}" text-anchor="middle">${a}</text>`;
+  s+=`<text x="${W-Rr}" y="${H-4}" text-anchor="end">Alter</text></g>`;
+  s+=`<rect x="${X(65)}" y="${T}" width="${X(amax)-X(65)}" height="${ph}" fill="var(--surface-2)" opacity=".7"/>`;
+  s+=`<text x="${X(66)}" y="${T+14}">Pension</text>`;
+  let d=`M ${X(25)} ${Y(0)}`; pts.forEach(p=>d+=` L ${X(p.age).toFixed(1)} ${Y(p.g).toFixed(1)}`); d+=` L ${X(65)} ${Y(0)} Z`;
+  s+=`<path d="${d}" fill="var(--c-pk)" fill-opacity=".75"/>`;
+  let d2=""; c.dd.path.forEach((p,i)=>{ if(p.age<=amax) d2+=(i?" L ":"M ")+X(p.age).toFixed(1)+" "+Y(p.g).toFixed(1); });
+  s+=`<path d="${d2}" fill="none" stroke="var(--c-cut)" stroke-width="2.5" stroke-dasharray="6 4"/>`;
+  s+=`<line x1="${L}" x2="${W-Rr}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--muted)"/>`;
+  s+=`<circle cx="${X(65)}" cy="${Y(c.K)}" r="6" fill="var(--c-pk)" stroke="var(--surface)" stroke-width="2"/>`;
+  s+=`<text class="lbl" x="${X(65)-8}" y="${Y(c.K)-10}" text-anchor="end">Fr. ${fmt(c.K)}</text>`;
+  if(c.dd.empty && c.dd.empty<=amax){ s+=`<circle cx="${X(c.dd.empty)}" cy="${Y(0)}" r="5" fill="var(--c-cut)"/><text class="lbl" x="${X(c.dd.empty)}" y="${Y(0)-10}" text-anchor="middle">leer mit ${c.dd.empty}</text>`; }
+  svg.innerHTML=s;
+}
+function sumChart(c){
+  const svg=$("sumChart"),W=680,L=150,Rr=90,bh=34;
+  const lohnM=c.jahr/12, max=Math.max(lohnM,c.total)*1.05, X=v=>L+v/max*(W-L-Rr);
+  let s=`<text class="lbl" x="${L-10}" y="${20+bh/2+4}" text-anchor="end">Letzter Lohn</text><rect x="${L}" y="20" width="${X(lohnM)-L}" height="${bh}" rx="8" fill="var(--c-ref)" fill-opacity=".35"/><text class="lbl" x="${X(lohnM)+8}" y="${20+bh/2+4}">${fmt(lohnM)}</text>`;
+  s+=`<text class="lbl" x="${L-10}" y="${80+bh/2+4}" text-anchor="end">Im Alter</text>`;
+  let x=L; for(const k of ["ahv","pk","s3a","el"]){ const w=X(c.parts[k])-L; if(w>0){ s+=`<rect x="${x}" y="80" width="${w}" height="${bh}" fill="var(${COL[k]})"><title>${NAME[k]}: Fr. ${fmt(c.parts[k])}</title></rect>`; x+=w; } }
+  s+=`<text class="lbl" x="${x+8}" y="${80+bh/2+4}">${fmt(c.total)}</text>`;
+  for(const q of [0.6,0.8]){ const xx=X(lohnM*q); s+=`<line x1="${xx}" x2="${xx}" y1="14" y2="${80+bh+8}" stroke="var(--text)" stroke-dasharray="3 3"/><text x="${xx}" y="${80+bh+24}" text-anchor="middle">${q*100} %</text>`; }
+  s+=`<text x="${L}" y="${80+bh+24}">Fr. pro Monat</text>`;
+  svg.innerHTML=s;
+}
+
+function render(){
+  const c=compute();
+  // Kopf
+  $("resV").textContent="Fr. "+fmt(c.total);
+  $("resS").textContent=`${pc(c.total/(c.jahr/12)*100,0)} des letzten Bruttolohns von Fr. ${fmt(c.jahr/12)} pro Monat`;
+  $("resStack").innerHTML=["ahv","pk","s3a","el"].map(k=>`<span style="width:${c.parts[k]/Math.max(c.total,1)*100}%;background:var(${COL[k]})"></span>`).join("");
+  $("resLeg").innerHTML=["ahv","pk","s3a","el"].filter(k=>c.parts[k]>0.5).map(k=>`<span><span class="dot" style="background:var(${COL[k]});margin-right:5px"></span>${NAME[k]} <b>${fmt(c.parts[k])}</b></span>`).join("");
+
+  // 1 AHV
+  $("c1").textContent=`Durchschnittseinkommen: ${fmt(S.lohn)} × ${S.n} = Fr. ${fmt(c.jahr)}\nVollrente (44 Jahre): Fr. ${fmt(c.voll)}\n`+
+    (S.gap?`Teilrente: ${fmt(c.voll)} × ${c.J} ÷ 44 = Fr. ${fmt(c.teil)}\n`:"Keine Lücken: volle Rente\n")+
+    (S.vor?`Vorbezug ${S.vor} Jahr${S.vor>1?"e":""}: − ${pc(c.kuerz)} → Fr. ${fmt(c.ahvM)}\n`:"")+
+    `Monatsrente: Fr. ${fmt(c.ahvM)}\nPro Jahr: ${fmt(c.ahvM)} × 12 + 13. Rente ${fmt(c.ahvM)} = Fr. ${fmt(c.ahvYear)}\nUmgerechnet pro Monat: Fr. ${fmt(c.ahvYear/12)}`;
+
+  // 2 PK
+  pkChart(c);
+  let t2 = S.pkMode==="est" ? `Koordinierter Lohn: ${fmt(Math.min(c.jahr,BVG.koord+BVG.kMax))} − 26'460 = Fr. ${fmt(c.est.koord)}\nAltersgutschriften 25–64 (7/10/15/18 %) + Zins 1,25 %\nAltersguthaben mit 65: Fr. ${fmt(c.K)}\n` : `Eigenes Altersguthaben mit 65: Fr. ${fmt(c.K)}\n`;
+  if(!S.kap) t2 += `Jahresrente: ${fmt(c.K)} × ${pc(S.uws)} = Fr. ${fmt(c.pkYear)}\nPro Monat: Fr. ${fmt(c.pkM)}`;
+  else t2 += `Kapitalbezug: Fr. ${fmt(c.K)}\nAuszahlung wie eine Rente: Fr. ${fmt(c.pkYear)} pro Jahr (= ${pc(S.uws)} des Kapitals)\nBei ${pc(S.ret,2)} Rendite ist das Kapital ${c.dd.empty?`mit ${c.dd.empty} Jahren aufgebraucht`:"bis 105 nicht aufgebraucht"}.`;
+  $("c2").textContent=t2;
+  const rows=[6.8,6.0,5.5,5.0]; if(!rows.includes(S.uws)) rows.push(S.uws); rows.sort((a,b)=>b-a);
+  $("uwsTab").innerHTML=`<thead><tr><th>Umwandlungssatz</th><th>Rente pro Jahr</th><th>pro Monat</th><th>Unterschied zu 6,8 %</th></tr></thead><tbody>`+
+    rows.map(u=>`<tr${u===S.uws?' class="cur"':""}><td>${pc(u)}${u===6.8?" (BVG-Minimum)":""}</td><td>${fmt(c.K*u/100)}</td><td>${fmt(c.K*u/1200)}</td><td>${u===6.8?"–":"− "+fmt(c.K*(6.8-u)/1200)+" / Mt."}</td></tr>`).join("")+`</tbody>`;
+  $("uwsSeg").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed", Number(b.dataset.u)===S.uws));
+
+  // 3 3a
+  $("c3").textContent = S.s3a>0 && S.s3aJ>0 ? `Kapital mit 65: ${fmt(S.s3a)} pro Jahr während ${S.s3aJ} Jahren, ${pc(S.ret,2)} Rendite = Fr. ${fmt(c.k3)}\nVerbrauch über 20 Jahre: Fr. ${fmt(c.a3Year)} pro Jahr = Fr. ${fmt(c.a3M)} pro Monat` : "Keine Säule 3a.";
+
+  // 4
+  sumChart(c);
+  const q=c.total/(c.jahr/12)*100;
+  $("kpis").innerHTML=
+    `<div class="kpi"><span class="k">Ersatzquote</span><span class="v">${pc(q,0)}</span><span class="s">Einkommen im Alter ÷ letzter Lohn</span></div>`+
+    `<div class="kpi"><span class="k">Anteil AHV</span><span class="v">${pc(c.parts.ahv/Math.max(c.total,1)*100,0)}</span><span class="s">am Einkommen im Alter</span></div>`+
+    `<div class="kpi"><span class="k">Lücke bis 60 %</span><span class="v">${q>=60?"keine":fmt(c.jahr/12*0.6-c.total)}</span><span class="s">${q>=60?"Ziel erreicht":"Fr. pro Monat"}</span></div>`;
+  const qOhne = (c.total-c.parts.el)/(c.jahr/12)*100;
+  $("m4").innerHTML = c.parts.el>0.5 ? `<b>Nur dank Ergänzungsleistungen</b>Ohne EL läge das Einkommen im Alter bei ${pc(qOhne,0)} des letzten Lohns und würde den Mindestbedarf nicht decken. Die EL schliessen diese Lücke; sie bezahlen auch die Krankenkassenprämie.` : q>=60 ? `<b>Ziel erreicht</b>Mit ${pc(q,0)} des letzten Lohns liegt das Renteneinkommen im üblichen Zielbereich. Je höher der Lohn, desto wichtiger werden Pensionskasse und Säule 3a, weil die AHV bei Fr. 2'520 aufhört.` :
+    `<b>Vorsorgelücke</b>Das Renteneinkommen liegt unter 60 % des letzten Lohns. Mögliche Massnahmen: Säule 3a einzahlen, Einkäufe in die Pensionskasse, Beitragslücken in der AHV vermeiden, später pensionieren.`;
+
+  // 5 EL
+  $("elA").innerHTML=`<thead><tr><th>Anerkannte Ausgaben</th><th>Fr./Jahr</th></tr></thead><tbody>
+    <tr><td>Allgemeiner Lebensbedarf</td><td>${fmt(c.ausgaben.leb)}</td></tr>
+    <tr><td>Miete (höchstens ${fmt(EL.miete[S.region])})</td><td>${fmt(c.ausgaben.miete)}</td></tr>
+    <tr><td>Krankenkasse (Durchschnittsprämie)</td><td>${fmt(c.ausgaben.kk)}</td></tr>
+    <tr class="total"><td>Total Ausgaben</td><td>${fmt(c.ausgTot)}</td></tr></tbody>`;
+  $("elE").innerHTML=`<thead><tr><th>Anrechenbare Einnahmen</th><th>Fr./Jahr</th></tr></thead><tbody>
+    <tr><td>AHV-Rente (12 Monate, ohne 13. Rente)</td><td>${fmt(c.einnahmen.ahv)}</td></tr>
+    <tr><td>Pensionskassenrente</td><td>${fmt(c.einnahmen.pk)}</td></tr>
+    <tr><td>Vermögensverzehr: (${fmt(c.vermEL)} − 30'000) ÷ 10</td><td>${fmt(c.einnahmen.verzehr)}</td></tr>
+    <tr class="total"><td>Total Einnahmen</td><td>${fmt(c.einTot)}</td></tr></tbody>`;
+  $("c5").textContent = !c.elOk ? `Vermögen Fr. ${fmt(c.vermEL)} (inkl. Säule 3a${S.kap?" und PK-Kapital":""}) liegt über der Schwelle von Fr. 100'000.\nKein Anspruch auf EL, bis das Vermögen aufgebraucht ist.` :
+    c.elYear>0 ? `Ausgaben ${fmt(c.ausgTot)} − Einnahmen ${fmt(c.einTot)} = Fr. ${fmt(c.elYear)} EL pro Jahr\n= Fr. ${fmt(c.elYear/12)} pro Monat` :
+    `Einnahmen ${fmt(c.einTot)} ≥ Ausgaben ${fmt(c.ausgTot)}\nKein Anspruch auf EL: Die Renten decken den Mindestbedarf.`;
+}
+
+/* Eingaben */
+const nums=[["lohn",0,100000],["gap",0,44],["pkOwn",0,1e8],["uws",0,10],["s3a",0,7258],["s3aJ",0,45],["ret",0,10],["miete",0,20000],["verm",0,1e8]];
+function sync(){ for(const [k] of nums) $(k).value=S[k]; $("lohnR").value=Math.min(Math.max(S.lohn,2000),15000);
+  $("n").value=S.n; $("vor").value=S.vor; $("pkMode").value=S.pkMode; $("region").value=S.region; $("pkOwnF").hidden=S.pkMode!=="own";
+  $("bRente").setAttribute("aria-pressed",!S.kap); $("bKap").setAttribute("aria-pressed",S.kap); }
+for(const [k,min,max] of nums) $(k).addEventListener("input",e=>{const v=Number(e.target.value); S[k]=isFinite(v)?Math.min(max,Math.max(min,v)):min; if(k==="lohn") $("lohnR").value=Math.min(Math.max(S.lohn,2000),15000); render();});
+$("lohnR").addEventListener("input",e=>{S.lohn=Number(e.target.value);$("lohn").value=S.lohn;render();});
+for(const k of ["n","vor","region"]) $(k).addEventListener("change",e=>{S[k]=Number(e.target.value);render();});
+$("pkMode").addEventListener("change",e=>{S.pkMode=e.target.value;$("pkOwnF").hidden=S.pkMode!=="own";render();});
+$("uwsSeg").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{S.uws=Number(b.dataset.u);$("uws").value=S.uws;render();}));
+$("bRente").addEventListener("click",()=>{S.kap=false;sync();render();});
+$("bKap").addEventListener("click",()=>{S.kap=true;sync();render();});
+sync(); render();
+})();
+</script>
+
+</body></html>
