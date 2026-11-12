@@ -1,0 +1,468 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!-- Entscheidungen:
+Einsatztyp: Lernmaterial EWR (Steuern), Zielgruppe Schüler:innen, Gerät gemischt.
+Funktion (beantwortet): Vergleich der Einkommensgruppen + eigener Warenkorb-Rechner; Theorie mit Steuersätzen, ausgenommenen Leistungen
+  und Mehrphasenprinzip (Vorsteuerabzug, Schritt-für-Schritt); Quiz mit 6 Fragen, sofortige Rückmeldung mit Begründung.
+Selbst entschieden:
+  - Daten: BFS Haushaltsbudgeterhebung (HABE) 2018–2019, Tabelle T20.02.01.00.12 «Haushaltseinkommen und -ausgaben nach Einkommensklasse»
+    (Fünftel nach Bruttoeinkommen). 2018–2019 statt 2020–2021, weil die Pandemiejahre den Konsum (Restaurants, Reisen) verzerren.
+  - MWST-Modell: Jede Konsumgruppe wird mit festen Anteilen auf Normalsatz, Beherbergungssatz, reduzierten Satz und ausgenommen verteilt
+    (Annahmen in Tabelle «Annahmen des Modells» offengelegt). Nur direkte MWST auf dem Konsum, keine «Schattensteuer» auf ausgenommenen Leistungen.
+  - Szenario: Abstimmung vom 29.11.2026 (Zusatzfinanzierung AHV, Normalsatz 8,5 %, Beherbergung 4,0 %, reduziert 2,6 %, frühestens ab 2028) als Umschalter.
+  - Beispiel Wertschöpfungskette: Holz → Schreinerei → Möbelhaus → Kundin (Normalsatz, runde Zahlen).
+Datenhaltung: keine. Kein Export.
+Design: eine Variante, EWR freundlich-lebendig: Nord-Palette, Open Sans + Google Sans Code für Zahlen, Überschriften 700, runde Karten.
+  Farben Steuersätze: Normalsatz nord12, Beherbergung nord13, reduziert nord14, ausgenommen nord4/nord3. Gesetzeskästen Rahmen nord10, Merke nord15.
+-->
+<title>Mehrwertsteuer erklärt</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400;600&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: Kopf, dann fünf Kapitel-Karten (Sätze, Mehrphasenprinzip, Einkommensgruppen, Rechner, Quiz), Quellen im Fuss. */
+:root{
+  --nord0:#2E3440;--nord1:#3B4252;--nord2:#434C5E;--nord3:#4C566A;--nord4:#D8DEE9;--nord5:#E5E9F0;--nord6:#ECEFF4;
+  --nord7:#8FBCBB;--nord8:#88C0D0;--nord9:#81A1C1;--nord10:#5E81AC;--nord11:#BF616A;--nord12:#D08770;--nord13:#EBCB8B;--nord14:#A3BE8C;--nord15:#B48EAD;
+  --bg:var(--nord6);--surface:#fff;--surface-2:var(--nord5);--line:var(--nord4);--text:var(--nord0);--muted:var(--nord3);
+  --accent:var(--nord10);--accent-soft:var(--nord9);
+  --r-n:var(--nord12);--r-b:var(--nord13);--r-r:var(--nord14);--r-x:var(--nord4);
+  --radius:16px;--radius-sm:10px;--shadow:0 1px 2px rgba(46,52,64,.06),0 6px 18px rgba(46,52,64,.07);
+  --font:"Open Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"Google Sans Code",ui-monospace,"Cascadia Code",Consolas,"SF Mono",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--bg:var(--nord0);--surface:var(--nord1);--surface-2:var(--nord2);--line:var(--nord2);--text:var(--nord6);--muted:var(--nord4);--accent:var(--nord8);--r-x:var(--nord3);--shadow:none;color-scheme:dark}
+}
+:root[data-theme="dark"]{--bg:var(--nord0);--surface:var(--nord1);--surface-2:var(--nord2);--line:var(--nord2);--text:var(--nord6);--muted:var(--nord4);--accent:var(--nord8);--r-x:var(--nord3);--shadow:none;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:17px;line-height:1.6;margin:0}
+.wrap{max-width:1100px;margin:0 auto;padding-block:22px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:22px}
+h1,h2,h3{text-wrap:balance;line-height:1.25;margin:0}
+h1{font-size:2rem;font-weight:700}
+h2{font-size:1.4rem;font-weight:700}
+h3{font-size:1.02rem;font-weight:600}
+p{margin:0;max-width:70ch}
+.muted{color:var(--muted)}
+a{color:var(--accent);text-decoration:underline}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
+.num{font-family:var(--font-mono)}
+.card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;display:flex;flex-direction:column;gap:14px;min-width:0}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .card{border:1px solid var(--nord2)}}
+:root[data-theme="dark"] .card{border:1px solid var(--nord2)}
+.eyebrow{font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.chap{display:flex;gap:12px;align-items:center}
+.chap .no{width:2.3rem;height:2.3rem;border-radius:50%;display:grid;place-items:center;font-family:var(--font-mono);font-weight:600;color:var(--nord0);flex:none}
+.rates{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:860px){.rates{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){.rates{grid-template-columns:minmax(0,1fr)}}
+.rate{border-radius:var(--radius-sm);padding:14px 16px;display:flex;flex-direction:column;gap:6px;background:var(--surface-2);border-top:6px solid}
+.rate .v{font-family:var(--font-mono);font-size:1.7rem;font-weight:600;line-height:1.1}
+.rate .t{font-weight:700}
+.rate ul{margin:0;padding-left:1.1em;font-size:.9rem}
+.law{border:2px solid var(--nord10);border-radius:var(--radius-sm);padding:10px 14px;font-size:.95rem;display:flex;flex-direction:column;gap:4px}
+.law .src{font-weight:700;color:var(--accent)}
+.merke{border-radius:var(--radius-sm);padding:10px 14px;background:color-mix(in srgb,var(--nord15) 18%,var(--surface));font-size:.95rem}
+.merke b{display:block}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+@media (max-width:760px){.two{grid-template-columns:minmax(0,1fr)}}
+.box{background:var(--surface-2);border-radius:var(--radius-sm);padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.field{display:flex;flex-direction:column;gap:4px;font-size:.88rem;font-weight:600;color:var(--muted)}
+.field input,.field select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 10px;min-width:0;font-weight:400;color:var(--text)}
+.field input{font-family:var(--font-mono)}
+.calc{font-family:var(--font-mono);font-size:.95rem;background:var(--surface);border-radius:8px;padding:10px 12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--bg);flex-wrap:wrap;max-width:100%}
+.seg button{border:0;background:transparent;padding:5px 14px;cursor:pointer;font-size:.9rem}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--bg);font-weight:600}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 16px;cursor:pointer;font-weight:600}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.btn:disabled{opacity:.45;cursor:default}
+.chain{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:760px){.chain{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stage{border-radius:var(--radius-sm);padding:12px;background:var(--surface-2);display:flex;flex-direction:column;gap:4px;opacity:.45;transition:opacity .25s;min-width:0}
+.stage.on{opacity:1}
+.stage.cur{outline:3px solid var(--accent-soft)}
+.stage .ic{font-size:1.6rem;line-height:1}
+.stage .nm{font-weight:700}
+.stage dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:0 8px;font-size:.84rem}
+.stage dd{margin:0;font-family:var(--font-mono);text-align:right}
+.stage .pay{font-weight:700;color:var(--text)}
+.stage{position:relative}
+@media (min-width:761px){.stage:not(:last-child)::after{content:"→";position:absolute;right:-12px;top:42%;font-size:1.1rem;font-weight:700;color:var(--muted)}}
+.stage .sp{border-radius:8px;padding:6px 8px;margin:2px 0;background:var(--surface)}
+.stage .sp dt,.stage .sp dd{font-size:.84rem}
+.stage .big{font-weight:700;font-size:.95rem}
+.stage .big+dd{font-size:.95rem;font-weight:700}
+.stage .tax{border-top:1px dashed var(--line);padding-top:4px;margin-top:2px}
+.stage .h{font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;margin-top:4px}
+.stage .from{font-size:.76rem;color:var(--muted)}
+.sw{display:inline-block;width:.85em;height:.85em;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font-family:var(--font);font-size:12px}
+.chart .lbl{fill:var(--text);font-weight:600}
+.chart .mono{font-family:var(--font-mono)}
+.chart .grid line{stroke:var(--line)}
+.legendrow{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.86rem;color:var(--muted)}
+.sq{display:inline-block;width:.85em;height:.85em;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.tabbox{overflow-x:auto;max-width:100%}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal}
+thead th{font-weight:600;color:var(--muted);font-size:.82rem}
+td.n{font-family:var(--font-mono)}
+tr.hl td{background:color-mix(in srgb,var(--nord13) 22%,transparent)}
+details{background:var(--surface-2);border-radius:var(--radius-sm);padding:10px 14px}
+summary{cursor:pointer;font-weight:600}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.kgrid .field{flex-direction:column}
+.kgrid .field span.tag{font-weight:400;font-size:.78rem}
+.res{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:760px){.res{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.res .box .v{font-family:var(--font-mono);font-size:1.35rem;font-weight:600}
+.res .box .s{font-size:.84rem;color:var(--muted)}
+.quiz{display:flex;flex-direction:column;gap:14px}
+.q{background:var(--surface-2);border-radius:var(--radius-sm);padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.q .opts{display:flex;flex-direction:column;gap:6px}
+.q button.o{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 12px;cursor:pointer}
+.q button.o.ok{border:2px solid var(--nord14);background:color-mix(in srgb,var(--nord14) 22%,var(--surface))}
+.q button.o.no{border:2px solid var(--nord11);background:color-mix(in srgb,var(--nord11) 16%,var(--surface))}
+.q .fb{font-size:.93rem}
+.score{font-weight:700}
+.path{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.88rem}
+.path a{display:inline-flex;gap:6px;align-items:center;text-decoration:none;color:var(--text);background:var(--surface);border-radius:999px;padding:4px 12px 4px 4px;box-shadow:var(--shadow)}
+.path a span{width:1.6rem;height:1.6rem;border-radius:50%;display:grid;place-items:center;font-family:var(--font-mono);font-weight:600;color:var(--nord0)}
+.path i{font-style:normal;color:var(--muted)}
+.builds{font-size:.88rem;color:var(--muted);border-left:3px solid var(--accent-soft);padding-left:10px}
+.foot{font-size:.84rem;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:10px">
+    <span class="eyebrow">EWR · Steuern · Mehrwertsteuer (MWST)</span>
+    <h1>Die Mehrwertsteuer: wer sie bezahlt und wen sie wie stark trifft</h1>
+    <p class="muted">Die Mehrwertsteuer ist die wichtigste Einnahmequelle des Bundes. Sie steckt in fast jedem Preis. Weil alle beim Einkaufen den gleichen Satz bezahlen, wirkt sie gerecht. Doch gemessen am Einkommen trifft sie nicht alle gleich stark.</p>
+    <nav class="path" aria-label="Lernweg"><a href="#s1"><span style="background:var(--nord12)">1</span>Sätze</a><i>→</i><a href="#s2"><span style="background:var(--nord8)">2</span>Mehrwert und Vorsteuer</a><i>→</i><a href="#s3"><span style="background:var(--nord15)">3</span>Einkommensgruppen</a><i>→</i><a href="#s4"><span style="background:var(--nord13)">4</span>Eigener Warenkorb</a><i>→</i><a href="#s5"><span style="background:var(--nord14)">5</span>Quiz</a></nav>
+  </header>
+
+  <!-- 1 Sätze -->
+  <section class="card" aria-labelledby="s1">
+    <div class="chap"><span class="no" style="background:var(--nord12)">1</span><h2 id="s1">Drei Sätze und viele Ausnahmen</h2></div>
+    <p>Die MWST ist eine <b>Konsumsteuer</b>: Sie wird auf dem Preis von Waren und Dienstleistungen erhoben. Seit 2024 gelten in der Schweiz drei Sätze. Einige Leistungen sind ganz von der Steuer ausgenommen.</p>
+    <div class="rates">
+      <div class="rate" style="border-top-color:var(--r-n)"><span class="t">Normalsatz</span><span class="v">8,1 %</span><ul><li>Kleider, Möbel, Elektronik</li><li>Restaurant, Take-away mit Sitzplatz</li><li>Auto, Benzin, ÖV-Billett</li><li>Alkohol, Tabak, Coiffeur, Strom</li></ul></div>
+      <div class="rate" style="border-top-color:var(--r-b)"><span class="t">Sondersatz Beherbergung</span><span class="v">3,8 %</span><ul><li>Hotelübernachtung mit Frühstück</li><li>Ferienwohnung, Jugendherberge</li></ul></div>
+      <div class="rate" style="border-top-color:var(--r-r)"><span class="t">Reduzierter Satz</span><span class="v">2,6 %</span><ul><li>Lebensmittel und alkoholfreie Getränke</li><li>Medikamente</li><li>Bücher, Zeitungen</li><li>Wasser aus der Leitung</li></ul></div>
+      <div class="rate" style="border-top-color:var(--r-x)"><span class="t">Ausgenommen</span><span class="v">0 %</span><ul><li>Wohnungsmiete</li><li>Arzt, Spital, Therapie</li><li>Schule und Ausbildung</li><li>Versicherungen, Bankgeschäfte</li></ul></div>
+    </div>
+    <div class="two">
+      <div class="law"><span class="src">Art. 25 MWSTG (sinngemäss)</span>Die Steuer beträgt 8,1 Prozent. Für Lebensmittel, Medikamente, Bücher und Zeitungen beträgt sie 2,6 Prozent, für Beherbergungsleistungen 3,8 Prozent.</div>
+      <div class="law"><span class="src">Art. 21 MWSTG (sinngemäss)</span>Von der Steuer ausgenommen sind unter anderem die Heilbehandlung, die Bildung, Versicherungs- und Bankgeschäfte sowie die Vermietung von Wohnungen.</div>
+    </div>
+    <div class="box">
+      <h3>Wie viel MWST steckt im Preis?</h3>
+      <p style="font-size:.95rem">Auf dem Kassenzettel steht der Preis <b>inklusive</b> MWST. Der Steueranteil ist deshalb kleiner als der Steuersatz: Bei 8,1 % sind es 8,1 von 108,1 Franken, also 7,49 % des Preises.</p>
+      <div class="row">
+        <label class="field">Preis inkl. MWST (Fr.)<input id="pPrice" type="number" min="0" step="0.05" value="54.05" inputmode="decimal" style="width:9rem"></label>
+        <label class="field">Steuersatz<select id="pRate"><option value="8.1">8,1 % Normalsatz</option><option value="3.8">3,8 % Beherbergung</option><option value="2.6">2,6 % reduziert</option><option value="0">0 % ausgenommen</option></select></label>
+      </div>
+      <div class="calc" id="pOut" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- 2 Mehrphasen -->
+  <section class="card" aria-labelledby="s2">
+    <div class="chap"><span class="no" style="background:var(--nord8)">2</span><h2 id="s2">Das Mehrphasenprinzip: Steuer auf dem Mehrwert</h2></div>
+    <p class="builds">Baut auf Kapitel 1 auf: Sie wissen, wie viel MWST in einem Preis steckt. Jetzt sehen Sie, wer sie auf dem Weg zum Endpreis abliefert.</p>
+    <p>Die MWST wird auf jeder Stufe der Wertschöpfungskette erhoben. Jedes Unternehmen darf aber die MWST, die es seinen Lieferanten bezahlt hat, als <b>Vorsteuer</b> abziehen. So liefert jede Stufe nur die Steuer auf ihrem eigenen <b>Mehrwert</b> ab. Am Schluss trägt die Konsumentin die ganze Steuer.</p>
+    <p>Beispiel: Ein Holztisch entsteht in drei Stufen. Jede Stufe kauft das Produkt der vorherigen Stufe ein, fügt ihren eigenen Mehrwert hinzu und verkauft es weiter. Der <b>Verkaufspreis</b> einer Stufe ist der <b>Einkaufspreis</b> der nächsten. So baut sich der Preis Stufe für Stufe auf.</p>
+    <div class="row">
+      <button type="button" class="btn" id="cPrev">← Zurück</button>
+      <button type="button" class="btn pri" id="cNext">Weiter →</button>
+      <span class="muted" id="cStep" style="font-size:.9rem"></span>
+    </div>
+    <svg class="chart" id="cStair" viewBox="0 0 680 360" role="img" aria-label="Aufbau des Preises über die Stufen der Wertschöpfungskette"></svg>
+    <div class="legendrow"><span><span class="sw" style="background:var(--nord14)"></span>Mehrwert Forstbetrieb</span><span><span class="sw" style="background:var(--nord8)"></span>Mehrwert Schreinerei</span><span><span class="sw" style="background:var(--nord15)"></span>Mehrwert Möbelhaus</span><span><span class="sw" style="background:var(--nord12)"></span>MWST, neu abgeliefert</span><span><span class="sw" style="background:var(--nord12);opacity:.35"></span>MWST, als Vorsteuer bereits bezahlt</span></div>
+    <div class="calc" id="cText" aria-live="polite"></div>
+    <div class="chain" id="chain"></div>
+    <svg class="chart" id="cBar" viewBox="0 0 680 120" role="img" aria-label="Abgelieferte MWST pro Stufe"></svg>
+    <div class="two">
+      <div class="law"><span class="src">Art. 28 MWSTG (sinngemäss)</span>Die steuerpflichtige Person kann die Steuer, die ihr von Lieferanten in Rechnung gestellt wurde, als Vorsteuer abziehen, soweit sie die Leistungen für ihre steuerbare Tätigkeit verwendet.</div>
+      <div class="merke"><b>Unternehmen ziehen die Steuer nur ein</b>Für Unternehmen ist die MWST ein Durchlaufposten. Wirtschaftlich bezahlt sie, wer am Ende konsumiert. Steuerpflichtig sind Unternehmen erst ab einem Jahresumsatz von 100'000 Franken (Art. 10 MWSTG).</div>
+    </div>
+  </section>
+
+  <!-- 3 Einkommensgruppen -->
+  <section class="card" aria-labelledby="s3">
+    <div class="chap"><span class="no" style="background:var(--nord15)">3</span><h2 id="s3">Wie stark trifft die MWST die Einkommensgruppen?</h2></div>
+    <p class="builds">Baut auf Kapitel 2 auf: Die ganze MWST landet im Endpreis und wird von den Haushalten getragen. Wie stark, hängt davon ab, wofür sie ihr Geld ausgeben.</p>
+    <p>Das Bundesamt für Statistik teilt die Haushalte nach ihrem Bruttoeinkommen in fünf gleich grosse Gruppen (Fünftel). Für jede Gruppe ist bekannt, wofür sie ihr Geld ausgibt. Daraus lässt sich schätzen, wie viel MWST ein Haushalt bezahlt.</p>
+    <div class="row" style="justify-content:space-between">
+      <div class="seg" role="group" aria-label="Messgrösse wählen" id="segM">
+        <button type="button" data-m="chf" aria-pressed="true">Franken pro Jahr</button>
+        <button type="button" data-m="kons" aria-pressed="false">% der Konsumausgaben</button>
+        <button type="button" data-m="brutto" aria-pressed="false">% des Bruttoeinkommens</button>
+      </div>
+      <div class="seg" role="group" aria-label="Steuersätze wählen" id="segR">
+        <button type="button" data-r="0" aria-pressed="true">Heute 8,1 %</button>
+        <button type="button" data-r="1" aria-pressed="false">Vorlage 8,5 %</button>
+      </div>
+    </div>
+    <svg class="chart" id="gBar" viewBox="0 0 680 300" role="img" aria-labelledby="s3"></svg>
+    <p class="muted" id="gNote" style="font-size:.92rem"></p>
+    <h3>Wofür die Gruppen ihr Geld ausgeben, nach MWST-Satz</h3>
+    <svg class="chart" id="gMix" viewBox="0 0 680 270" role="img" aria-label="Konsum nach Steuersatz und Sparbetrag pro Einkommensgruppe"></svg>
+    <div class="legendrow"><span><span class="sq" style="background:var(--r-n)"></span>Normalsatz</span><span><span class="sq" style="background:var(--r-b)"></span>Beherbergung</span><span><span class="sq" style="background:var(--r-r)"></span>reduzierter Satz</span><span><span class="sq" style="background:var(--r-x)"></span>ausgenommen (v. a. Miete)</span><span><span class="sq" style="background:var(--nord10)"></span>Sparbetrag</span><span><span class="sq" style="background:var(--nord11)"></span>Entsparen (Ersparnisse aufbrauchen)</span></div>
+    <div class="tabbox"><table id="gTab"></table></div>
+    <div class="two">
+      <div class="merke"><b>Pro Konsumfranken: fast gleich</b>Haushalte mit tiefem Einkommen geben einen grösseren Teil für Miete (ausgenommen) und Lebensmittel (2,6 %) aus. Pro ausgegebenen Franken bezahlen sie darum sogar etwas weniger MWST als reiche Haushalte.</div>
+      <div class="merke"><b>Pro Einkommensfranken: regressiv</b>Tiefe Einkommen geben ihr ganzes Einkommen aus oder brauchen Ersparnisse auf. Hohe Einkommen sparen einen grossen Teil, und auf das Ersparte fällt keine MWST an. Gemessen am Einkommen belastet die MWST tiefe Einkommen darum stärker. Das nennt man <b>regressiv</b>.</div>
+    </div>
+    <details>
+      <summary>Annahmen des Modells</summary>
+      <p style="font-size:.92rem;margin-top:8px">Die HABE zeigt nur die Ausgaben je Konsumgruppe, nicht den Steuersatz. Die Aufteilung auf die Sätze ist eine vereinfachte Schätzung. Die MWST im Preis wird mit Satz ÷ (100 + Satz) berechnet.</p>
+      <div class="tabbox"><table id="aTab"></table></div>
+    </details>
+  </section>
+
+  <!-- 4 Rechner -->
+  <section class="card" aria-labelledby="s4">
+    <div class="chap"><span class="no" style="background:var(--nord13)">4</span><h2 id="s4">Rechner: Wie viel MWST bezahlt Ihr Haushalt?</h2></div>
+    <p class="builds">Baut auf Kapitel 3 auf: Gleiches Modell, aber mit Ihrem eigenen Warenkorb.</p>
+    <p>Wählen Sie eine Einkommensgruppe als Vorlage oder tragen Sie eigene Monatsausgaben ein. Der Rechner zeigt, wie viel MWST im Warenkorb steckt.</p>
+    <div class="row">
+      <span class="muted" style="font-size:.88rem;font-weight:600">Vorlage:</span>
+      <div class="seg" role="group" aria-label="Vorlage wählen" id="segP"></div>
+    </div>
+    <div class="row">
+      <label class="field">Bruttoeinkommen pro Monat (Fr.)<input id="kInc" type="number" min="0" step="100" inputmode="numeric" style="width:11rem"></label>
+      <label class="field">Steuersätze<select id="kRate"><option value="0">Heute: 8,1 / 3,8 / 2,6 %</option><option value="1">Vorlage 29.11.2026: 8,5 / 4,0 / 2,6 %</option></select></label>
+    </div>
+    <div class="kgrid" id="kGrid"></div>
+    <div class="res" id="kRes" aria-live="polite"></div>
+  </section>
+
+  <!-- 5 Quiz -->
+  <section class="card" aria-labelledby="s5">
+    <div class="chap"><span class="no" style="background:var(--nord14)">5</span><h2 id="s5">Quiz</h2></div>
+    <div class="quiz" id="quiz"></div>
+    <div class="row"><span class="score" id="qScore"></span><button type="button" class="btn" id="qReset">Neu starten</button></div>
+  </section>
+
+  <footer class="foot">
+    <span>Quellen: Bundesamt für Statistik, <a href="https://www.bfs.admin.ch/asset/de/32666998" target="_blank" rel="noopener">Haushaltsbudgeterhebung, Haushaltseinkommen und -ausgaben nach Einkommensklasse (T20.02.01.00.12), 2018–2019</a>; <a href="https://www.fedlex.admin.ch/eli/cc/2009/615/de" target="_blank" rel="noopener">Mehrwertsteuergesetz (MWSTG)</a>; <a href="https://www.bsv.admin.ch/de/abstimmung-13-ahv-rente" target="_blank" rel="noopener">BSV zur Abstimmung vom 29. November 2026</a>.</span>
+    <span>Einkommensklassen nach Fünfteln des Bruttoeinkommens 2018–2019 (Fr. pro Monat): unter 4'553 · 4'553–6'731 · 6'732–9'413 · 9'414–13'447 · ab 13'448. Die Aufteilung der Konsumgruppen auf die Steuersätze ist eine vereinfachte Schätzung. Nicht berücksichtigt: versteckte MWST auf ausgenommenen Leistungen (z. B. in Mieten), Unterschiede innerhalb der Gruppen, Verhaltensänderungen.</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const fmt=(n,d=0)=>{const neg=n<0;const s=(Math.round(Math.abs(n)*10**d)/10**d).toFixed(d);const [a,b]=s.split(".");return (neg?"−":"")+a.replace(/\B(?=(\d{3})+(?!\d))/g,"'")+(b?"."+b:"");};
+const pc=(n,d=1)=>(Math.round(n*10**d)/10**d).toFixed(d).replace(".",",")+" %";
+const RATES=[{n:8.1,b:3.8,r:2.6,lab:"heute"},{n:8.5,b:4.0,r:2.6,lab:"Vorlage 8,5 %"}];
+
+/* ---- Konsumgruppen (HABE) und Modellannahmen: Anteile Normal / Beherbergung / reduziert, Rest ausgenommen ---- */
+const CAT=[
+ {k:"Nahrungsmittel und alkoholfreie Getränke",s:"Nahrung",a:[0,0,1],why:"Lebensmittel: reduzierter Satz"},
+ {k:"Alkoholische Getränke und Tabakwaren",s:"Alkohol, Tabak",a:[1,0,0],why:"Normalsatz"},
+ {k:"Restaurants und Hotels",s:"Restaurant, Hotel",a:[.85,.15,0],why:"Annahme: 85 % Restaurant, 15 % Übernachtung"},
+ {k:"Bekleidung und Schuhe",s:"Kleider, Schuhe",a:[1,0,0],why:"Normalsatz"},
+ {k:"Wohnen und Energie",s:"Wohnen, Energie",a:[.2,0,0],why:"Annahme: 80 % Miete (ausgenommen), 20 % Strom, Heizung"},
+ {k:"Wohnungseinrichtung und Haushalt",s:"Einrichtung, Haushalt",a:[1,0,0],why:"Normalsatz"},
+ {k:"Gesundheit",s:"Gesundheit",a:[0,0,.4],why:"Annahme: 60 % Behandlungen (ausgenommen), 40 % Medikamente"},
+ {k:"Verkehr",s:"Verkehr",a:[1,0,0],why:"Fahrzeuge, Benzin, ÖV: Normalsatz"},
+ {k:"Nachrichtenübermittlung",s:"Telefon, Internet",a:[1,0,0],why:"Normalsatz"},
+ {k:"Unterhaltung, Erholung und Kultur",s:"Freizeit, Kultur",a:[.6,0,.15],why:"Annahme: 60 % Normalsatz, 15 % Bücher/Zeitungen, 25 % ausgenommen (Kurse, Kultur, Pauschalreisen)"},
+ {k:"Andere Waren und Dienstleistungen",s:"Andere",a:[.6,0,0],why:"Annahme: 60 % Normalsatz (Körperpflege), 40 % ausgenommen (Kinderbetreuung, Sozialdienste)"}
+];
+/* BFS HABE 2018–2019, Fr. pro Monat und Haushalt */
+const Q=[
+ {n:"1. Fünftel",r:"unter 4'553",inc:3168.8,disp:2209.7,save:-787.8,p:1.3,c:[388.7,58,207.5,74.9,1078.8,84.3,127.8,280.6,115.1,216.4,119.1]},
+ {n:"2. Fünftel",r:"4'553–6'731",inc:5641.5,disp:4053.1,save:175.1,p:1.7,c:[493.6,74.5,343.3,110.3,1212.5,124.4,164.2,452.9,146.6,340,181.9]},
+ {n:"3. Fünftel",r:"6'732–9'413",inc:8032.3,disp:5656.1,save:751.8,p:2.1,c:[608.6,94.8,482.4,149.6,1329.5,187.5,202.2,660.7,168.1,442.5,241.2]},
+ {n:"4. Fünftel",r:"9'414–13'447",inc:11269.1,disp:7906.7,save:1796.7,p:2.6,c:[707.1,114.1,675.6,197.2,1571,241.9,217.1,876.2,205,623.3,341]},
+ {n:"5. Fünftel",r:"ab 13'448",inc:19579.7,disp:13321.6,save:4568.3,p:2.9,c:[892.5,134.2,1038.5,360.3,1813.2,388.3,281.5,1296,248.2,966.7,747.4]}
+];
+function vat(c,ri){const R=RATES[ri];let t=0,split=[0,0,0,0];
+  c.forEach((x,i)=>{const [a,b,r]=CAT[i].a; split[0]+=x*a; split[1]+=x*b; split[2]+=x*r; split[3]+=x*(1-a-b-r);
+    t+=x*(a*R.n/(100+R.n)+b*R.b/(100+R.b)+r*R.r/(100+R.r));});
+  const kons=c.reduce((s,x)=>s+x,0); return {m:t,y:t*12,kons,split};}
+
+/* ---- 1 Preisrechner ---- */
+function price(){const p=Math.max(0,Number($("pPrice").value)||0), r=Number($("pRate").value);
+  const net=p/(1+r/100), tax=p-net;
+  $("pOut").textContent = r===0 ? `Ausgenommen: Im Preis von Fr. ${fmt(p,2)} steckt keine MWST.` :
+   `Preis ohne MWST:  ${fmt(p,2)} ÷ ${fmt(1+r/100,3)} = Fr. ${fmt(net,2)}\nMWST im Preis:    ${fmt(p,2)} × ${String(r).replace(".",",")} ÷ ${String(100+r).replace(".",",")} = Fr. ${fmt(tax,2)}\nAnteil am Preis:  ${pc(tax/(p||1)*100,2)}`;}
+$("pPrice").addEventListener("input",price); $("pRate").addEventListener("change",price); price();
+
+/* ---- 2 Wertschöpfungskette ---- */
+const ST=[
+ {ic:"🌲",nm:"Forstbetrieb",what:"verkauft Holz",buy:0,sell:200},
+ {ic:"🪚",nm:"Schreinerei",what:"baut einen Tisch",buy:200,sell:600},
+ {ic:"🏬",nm:"Möbelhaus",what:"verkauft den Tisch",buy:600,sell:1000},
+ {ic:"🙋",nm:"Kundin",what:"kauft den Tisch",buy:1000,sell:null}
+];
+const R0=0.081; let step=0;
+function chain(){
+  $("chain").innerHTML=ST.map((s,i)=>{const on=i<=step?" on":"", cur=i===step?" cur":"";
+    const head=`<span class="ic" aria-hidden="true">${s.ic}</span><span class="nm">${s.nm}</span><span class="muted" style="font-size:.84rem">${s.what}</span>`;
+    if(s.sell===null) return `<div class="stage${on}${cur}">${head}<span class="h">Einkauf</span><dl class="sp"><dt>Preis netto</dt><dd>${fmt(s.buy,2)}</dd><dt>+ MWST 8,1 %</dt><dd>${fmt(s.buy*R0,2)}</dd><dt class="big">bezahlt</dt><dd>${fmt(s.buy*(1+R0),2)}</dd></dl><span class="from">= Verkaufspreis Möbelhaus</span><span class="h">Vorsteuerabzug</span><dl><dt>keiner</dt><dd>–</dd></dl><span class="from">Die Kundin trägt die ganzen Fr. 81.00.</span></div>`;
+    const ust=s.sell*R0, vst=s.buy*R0, prev=i?ST[i-1].nm:"";
+    return `<div class="stage${on}${cur}">${head}
+      <span class="h">Preis bilden</span>
+      <dl class="sp"><dt>Einkauf netto</dt><dd>${fmt(s.buy,2)}</dd><dt>+ eigener Mehrwert</dt><dd>${fmt(s.sell-s.buy,2)}</dd><dt class="big">= Verkaufspreis netto</dt><dd>${fmt(s.sell,2)}</dd><dt class="tax">+ MWST 8,1 %</dt><dd class="tax">${fmt(ust,2)}</dd><dt class="big">= Verkaufspreis inkl. MWST</dt><dd>${fmt(s.sell+ust,2)}</dd></dl>
+      ${i?`<span class="from">Einkauf = Verkaufspreis ${prev}</span>`:`<span class="from">Rohstoff aus eigenem Wald, kein Einkauf</span>`}
+      <span class="h">Abrechnung mit dem Staat</span>
+      <dl><dt>MWST verrechnet</dt><dd>${fmt(ust,2)}</dd><dt>− Vorsteuer</dt><dd>${fmt(vst,2)}</dd><dt class="pay">= abliefern</dt><dd class="pay">${fmt(ust-vst,2)}</dd></dl></div>`;}).join("");
+  stair();
+  const s=ST[step];
+  const txt=[
+   `Der Forstbetrieb verkauft Holz für Fr. 200.00 und verrechnet 8,1 % MWST: Fr. 16.20.\nEr hat nichts eingekauft, also keine Vorsteuer. Er liefert Fr. 16.20 an die Eidgenössische Steuerverwaltung ab.`,
+   `Die Schreinerei bezahlt für das Holz 200.00 + 16.20 MWST. Sie verkauft den Tisch für 600.00 + 48.60 MWST.\nSie zieht die bezahlte Vorsteuer ab: 48.60 − 16.20 = Fr. 32.40.\nDas ist genau 8,1 % ihres Mehrwerts von Fr. 400.00.`,
+   `Das Möbelhaus kauft den Tisch für 600.00 + 48.60 und verkauft ihn für 1'000.00 + 81.00 MWST.\nEs liefert ab: 81.00 − 48.60 = Fr. 32.40 (8,1 % von Fr. 400.00 Mehrwert).`,
+   `Die Kundin bezahlt Fr. 1'081.00. Sie ist keine Unternehmerin und kann keine Vorsteuer abziehen.\nDer Staat hat insgesamt erhalten: 16.20 + 32.40 + 32.40 = Fr. 81.00.\nDas ist genau die MWST im Endpreis. Getragen hat sie die Kundin.`][step];
+  $("cText").textContent=txt; $("cStep").textContent=`Schritt ${step+1} von 4`;
+  $("cPrev").disabled=step===0; $("cNext").disabled=step===3;
+  // Balken
+  const parts=[[16.2,"Forst"],[32.4,"Schreinerei"],[32.4,"Möbelhaus"]], W=680, L=10, scale=(W-20-100)/81;
+  let x=L, svg="";
+  parts.forEach(([v,n],i)=>{const show=i<=step && i<3; const w=v*scale;
+    svg+=`<rect x="${x}" y="34" width="${w-3}" height="34" rx="6" fill="var(--nord12)" fill-opacity="${show?1:.15}"/>`;
+    if(show) svg+=`<text class="lbl mono" x="${x+w/2}" y="56" text-anchor="middle">${fmt(v,2)}</text><text x="${x+w/2}" y="88" text-anchor="middle">${n}</text>`;
+    x+=w;});
+  const tot=parts.slice(0,Math.min(step+1,3)).reduce((s,p)=>s+p[0],0);
+  svg+=`<text class="lbl" x="${L}" y="20">MWST an die Steuerverwaltung</text><text class="lbl mono" x="${x+10}" y="56">= ${fmt(tot,2)}</text>`;
+  if(step===3) svg+=`<text x="${L}" y="112">Summe = 8,1 % von Fr. 1'000.00 Endpreis netto</text>`;
+  $("cBar").innerHTML=svg;}
+/* Treppe: Preis baut sich Stufe für Stufe auf */
+function stair(){
+  const W=680,H=360,L=62,R=12,T=34,B=58, pw=W-L-R, ph=H-T-B, ymax=1150;
+  const Y=v=>T+ph-v/ymax*ph, colW=pw/4, bw=colW*.52;
+  const MV=[[200,"var(--nord14)","Forstbetrieb"],[400,"var(--nord8)","Schreinerei"],[400,"var(--nord15)","Möbelhaus"]];
+  let s='<g class="grid">';
+  for(let v=0;v<=1000;v+=250) s+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${L-6}" y="${Y(v)+4}" text-anchor="end">${fmt(v)}</text>`;
+  s+='</g>';
+  ST.forEach((st,i)=>{
+    const cx=L+colW*(i+.5), x=cx-bw/2, vis=i<=step, op=vis?1:.12;
+    const nOwn=Math.min(i+1,3); // Anzahl Mehrwert-Blöcke in dieser Säule
+    let base=0;
+    for(let k=0;k<nOwn;k++){const [v,c,n]=MV[k]; const isNew=(k===i);
+      s+=`<rect x="${x}" y="${Y(base+v)}" width="${bw}" height="${Y(base)-Y(base+v)}" fill="${c}" fill-opacity="${op*(isNew||i===3?1:.55)}" stroke="var(--surface)" stroke-width="1.5"><title>Mehrwert ${n}: Fr. ${fmt(v)}</title></rect>`;
+      if(vis && (isNew||i===3)) s+=`<text class="mono" x="${cx}" y="${(Y(base)+Y(base+v))/2+4}" text-anchor="middle" style="fill:var(--nord0);font-weight:600">${isNew?"+ ":""}${fmt(v)}</text>`;
+      base+=v;}
+    if(vis && i>0 && i<3) s+=`<text x="${cx}" y="${(Y(0)+Y(ST[i].buy))/2+4}" text-anchor="middle" style="fill:var(--nord0)">Einkauf ${fmt(st.buy)}</text>`;
+    // MWST oben drauf
+    const net=base, tax=net*R0, vst=(i<3?st.buy:net)*R0;
+    if(i<3){ s+=`<rect x="${x}" y="${Y(net+vst)}" width="${bw}" height="${Y(net)-Y(net+vst)}" fill="var(--nord12)" fill-opacity="${op*.35}"><title>Vorsteuer Fr. ${fmt(vst,2)}</title></rect>`;
+      s+=`<rect x="${x}" y="${Y(net+tax)}" width="${bw}" height="${Y(net+vst)-Y(net+tax)}" fill="var(--nord12)" fill-opacity="${op}"><title>neu abgeliefert Fr. ${fmt(tax-vst,2)}</title></rect>`; }
+    else s+=`<rect x="${x}" y="${Y(net+tax)}" width="${bw}" height="${Y(net)-Y(net+tax)}" fill="var(--nord12)" fill-opacity="${op}"><title>MWST Fr. ${fmt(tax,2)}</title></rect>`;
+    if(vis){
+      s+=`<text class="lbl mono" x="${cx}" y="${Y(net+tax)-20}" text-anchor="middle">${fmt(net+tax,2)}</text>`;
+      s+=`<text x="${cx}" y="${Y(net+tax)-6}" text-anchor="middle">${i<3?"inkl. MWST":"bezahlt Kundin"}</text>`;
+      if(i<3) s+=`<text class="mono" x="${x+bw+(colW-bw)/2}" y="${Y(net)-6}" text-anchor="middle" style="font-size:11px">${fmt(net)}</text><text x="${x+bw+(colW-bw)/2}" y="${Y(net)+15}" text-anchor="middle" style="font-size:10.5px">netto</text>`;
+      // Verbindung: Verkaufspreis wird Einkaufspreis der nächsten Stufe
+      if(i<3 && i+1<=step){ const nx=L+colW*(i+1.5)-bw/2; s+=`<path d="M ${x+bw} ${Y(net)} L ${nx} ${Y(net)}" stroke="var(--text)" stroke-width="1.5" stroke-dasharray="4 3" fill="none" marker-end="url(#arr)"/>`; }
+    }
+    s+=`<text class="lbl" x="${cx}" y="${H-B+20}" text-anchor="middle" fill-opacity="${vis?1:.4}">${st.nm}</text>`;
+    const del=i===0?16.2:i<3?32.4:0;
+    if(vis) s+=`<text class="mono" x="${cx}" y="${H-B+38}" text-anchor="middle">${i<3?"liefert ab: "+fmt(del,2):"Staat total: 81.00"}</text>`;
+  });
+  s=`<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--text)"/></marker></defs>`+s;
+  s+=`<text x="${L}" y="16" class="lbl">Wie sich der Preis aufbaut (Franken)</text>`;
+  $("cStair").innerHTML=s;}
+$("cPrev").addEventListener("click",()=>{if(step>0){step--;chain();}});
+$("cNext").addEventListener("click",()=>{if(step<3){step++;chain();}});
+chain();
+
+/* ---- 3 Einkommensgruppen ---- */
+let M="chf", RI=0;
+function groups(){
+  const svg=$("gBar"), W=680,H=300,L=60,R=16,T=26,B=46, pw=W-L-R, ph=H-T-B;
+  const res=Q.map(q=>vat(q.c,RI)), base=Q.map(q=>vat(q.c,0));
+  const val=r=>M==="chf"?r.y : M==="kons"? r.m/r.kons*100 : r.m/Q[res.indexOf(r)].inc*100;
+  const vals=res.map((r,i)=>M==="chf"?r.y:M==="kons"?r.m/r.kons*100:r.m/Q[i].inc*100);
+  const ymax=M==="chf"?6000:M==="kons"?6:4, step_=M==="chf"?1000:1;
+  const Y=v=>T+ph-v/ymax*ph;
+  let s='<g class="grid">';
+  for(let v=0;v<=ymax+1e-9;v+=step_) s+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${L-6}" y="${Y(v)+4}" text-anchor="end">${M==="chf"?fmt(v):v+" %"}</text>`;
+  s+='</g>';
+  const bw=pw/5*.56;
+  Q.forEach((q,i)=>{const cx=L+pw/5*(i+.5), v=vals[i];
+    if(RI===1){const b0=M==="chf"?base[i].y:M==="kons"?base[i].m/base[i].kons*100:base[i].m/q.inc*100;
+      s+=`<rect x="${cx-bw/2}" y="${Y(v)}" width="${bw}" height="${Y(b0)-Y(v)}" fill="var(--nord13)"><title>Mehrbelastung</title></rect>`;
+      s+=`<rect x="${cx-bw/2}" y="${Y(b0)}" width="${bw}" height="${Y(0)-Y(b0)}" fill="var(--nord15)"/>`;}
+    else s+=`<rect x="${cx-bw/2}" y="${Y(v)}" width="${bw}" height="${Y(0)-Y(v)}" rx="0" fill="var(--nord15)"><title>${q.n}: ${M==="chf"?"Fr. "+fmt(v):pc(v,2)}</title></rect>`;
+    s+=`<text class="lbl mono" x="${cx}" y="${Y(v)-7}" text-anchor="middle">${M==="chf"?fmt(v):pc(v,1)}</text>`;
+    s+=`<text class="lbl" x="${cx}" y="${H-B+18}" text-anchor="middle">${q.n}</text><text x="${cx}" y="${H-B+34}" text-anchor="middle">${q.r}</text>`;});
+  s+=`<text x="${L}" y="${T-10}">${M==="chf"?"MWST pro Haushalt und Jahr in Franken":M==="kons"?"MWST in % der Konsumausgaben":"MWST in % des Bruttoeinkommens"}${RI===1?" (gelb: Mehrbelastung mit 8,5 %)":""}</text>`;
+  svg.innerHTML=s;
+  const v0=vals[0], v4=vals[4];
+  $("gNote").textContent = M==="chf" ? `Reiche Haushalte bezahlen in Franken deutlich mehr MWST: das oberste Fünftel rund ${fmt(v4/v0,1).replace(".",",")}-mal so viel wie das unterste. Sie konsumieren mehr und leben oft mit mehr Personen im Haushalt.` :
+    M==="kons" ? `Pro ausgegebenen Franken ist die Belastung fast gleich (${pc(v0,1)} bis ${pc(v4,1)}). Unten ist sie sogar etwas tiefer, weil Miete und Lebensmittel einen grösseren Anteil ausmachen.` :
+    `Gemessen am Bruttoeinkommen ist die Belastung im untersten Fünftel mit ${pc(v0,1)} deutlich höher als im obersten mit ${pc(v4,1)}. Die MWST wirkt regressiv.`;
+  if(RI===1){const d=res.map((r,i)=>r.y-base[i].y); $("gNote").textContent+=` Mit der Erhöhung auf 8,5 % zahlt ein Haushalt im untersten Fünftel rund Fr. ${fmt(d[0])} pro Jahr mehr, im obersten rund Fr. ${fmt(d[4])}.`;}
+  mix(res); table(res);
+}
+function mix(res){
+  const svg=$("gMix"), W=680, L=110, R=16, rowH=44, T=10;
+  const max=Math.max(...Q.map((q,i)=>res[i].kons+Math.max(0,q.save)));
+  const X=v=>(W-L-R)*v/max;
+  let s="";
+  Q.forEach((q,i)=>{const y=T+i*rowH, h=28; let x=L;
+    s+=`<text class="lbl" x="${L-8}" y="${y+h/2+4}" text-anchor="end">${q.n}</text>`;
+    const sp=res[i].split; const cols=["var(--r-n)","var(--r-b)","var(--r-r)","var(--r-x)"], nm=["Normalsatz","Beherbergung","reduziert","ausgenommen"];
+    sp.forEach((v,j)=>{s+=`<rect x="${x}" y="${y}" width="${X(v)}" height="${h}" fill="${cols[j]}"><title>${q.n}, ${nm[j]}: Fr. ${fmt(v)} pro Monat</title></rect>`; x+=X(v);});
+    if(q.save>0){s+=`<rect x="${x}" y="${y}" width="${X(q.save)}" height="${h}" fill="var(--nord10)"><title>Sparbetrag Fr. ${fmt(q.save)}</title></rect>`;}
+    else {s+=`<rect x="${x-X(-q.save)}" y="${y+h-6}" width="${X(-q.save)}" height="6" fill="var(--nord11)"><title>Entsparen Fr. ${fmt(-q.save)}</title></rect>`;}
+    s+=`<text class="mono" x="${Math.min(x+(q.save>0?X(q.save):0)+6,W-R-90)}" y="${y+h/2+4}" ${x+(q.save>0?X(q.save):0)+6>W-R-90?'fill="var(--nord6)"':""}>${q.save>0?"spart "+fmt(q.save):"−"+fmt(-q.save)}</text>`;});
+  s+=`<text x="${L}" y="${T+5*rowH+12}">Franken pro Monat und Haushalt: Konsumausgaben nach MWST-Satz, danach Sparbetrag</text>`;
+  svg.setAttribute("viewBox",`0 0 ${W} ${T+5*rowH+20}`); svg.innerHTML=s;}
+function table(res){
+  let t=`<thead><tr><th>Einkommensgruppe (Fr./Monat)</th><th>Brutto&shy;einkommen</th><th>Konsum</th><th>Sparbetrag</th><th>Anteil Miete/Energie am Konsum</th><th>MWST pro Monat</th><th>% Konsum</th><th>% Brutto</th></tr></thead><tbody>`;
+  Q.forEach((q,i)=>{const r=res[i]; t+=`<tr><td>${q.n}<br><span class="muted" style="font-size:.8rem">${q.r}</span></td><td class="n">${fmt(q.inc)}</td><td class="n">${fmt(r.kons)}</td><td class="n">${fmt(q.save)}</td><td class="n">${pc(q.c[4]/r.kons*100,0)}</td><td class="n">${fmt(r.m)}</td><td class="n">${pc(r.m/r.kons*100,1)}</td><td class="n">${pc(r.m/q.inc*100,1)}</td></tr>`;});
+  $("gTab").innerHTML=t+"</tbody>";}
+$("segM").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;M=b.dataset.m;[...$("segM").children].forEach(x=>x.setAttribute("aria-pressed",x===b));groups();});
+$("segR").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;RI=Number(b.dataset.r);[...$("segR").children].forEach(x=>x.setAttribute("aria-pressed",x===b));groups();});
+groups();
+$("aTab").innerHTML=`<thead><tr><th>Konsumgruppe</th><th>8,1 %</th><th>3,8 %</th><th>2,6 %</th><th>ausgen.</th></tr></thead><tbody>`+CAT.map(c=>`<tr><td>${c.k}<br><span class="muted" style="font-size:.8rem">${c.why}</span></td>${c.a.map(v=>`<td class="n">${v?Math.round(v*100)+" %":"–"}</td>`).join("")}<td class="n">${Math.round((1-c.a[0]-c.a[1]-c.a[2])*100)||"–"}${(1-c.a[0]-c.a[1]-c.a[2])>0.001?" %":""}</td></tr>`).join("")+"</tbody>";
+
+/* ---- 4 Rechner ---- */
+let preset=2;
+$("segP").innerHTML=Q.map((q,i)=>`<button type="button" data-i="${i}" aria-pressed="${i===preset}">${i+1}. Fünftel</button>`).join("");
+$("kGrid").innerHTML=CAT.map((c,i)=>{const a=c.a, tag=a[0]===1?"8,1 %":a[2]===1?"2,6 %":"gemischt";
+  return `<label class="field">${c.s} <span class="tag">${tag}</span><input type="number" min="0" step="10" inputmode="numeric" id="k${i}"></label>`;}).join("");
+function loadPreset(i){preset=i;const q=Q[i];CAT.forEach((c,j)=>$("k"+j).value=Math.round(q.c[j]));$("kInc").value=Math.round(q.inc);
+  [...$("segP").children].forEach((b,j)=>b.setAttribute("aria-pressed",j===i));calc();}
+function calc(){const c=CAT.map((_,j)=>Math.max(0,Number($("k"+j).value)||0)), inc=Math.max(0,Number($("kInc").value)||0), ri=Number($("kRate").value);
+  const r=vat(c,ri), r0=vat(c,0);
+  $("kRes").innerHTML=`<div class="box"><span class="s">MWST pro Monat</span><span class="v">Fr. ${fmt(r.m)}</span><span class="s">Konsum Fr. ${fmt(r.kons)}</span></div>
+  <div class="box"><span class="s">MWST pro Jahr</span><span class="v">Fr. ${fmt(r.y)}</span><span class="s">${ri===1?"davon Erhöhung Fr. "+fmt(r.y-r0.y):"zum Vergleich mit 8,5 %: + Fr. "+fmt(vat(c,1).y-r.y)}</span></div>
+  <div class="box"><span class="s">in % des Konsums</span><span class="v">${pc(r.kons?r.m/r.kons*100:0,2)}</span><span class="s">Steuer pro Konsumfranken</span></div>
+  <div class="box"><span class="s">in % des Bruttoeinkommens</span><span class="v">${inc?pc(r.m/inc*100,2):"–"}</span><span class="s">${inc?(r.kons>inc?"Achtung: Ausgaben höher als Einkommen":"Es bleiben Fr. "+fmt(inc-r.kons)+" für Steuern, Abgaben, Sparen"):"Einkommen eingeben"}</span></div>`;}
+$("segP").addEventListener("click",e=>{const b=e.target.closest("button");if(b)loadPreset(Number(b.dataset.i));});
+$("kGrid").addEventListener("input",()=>{[...$("segP").children].forEach(b=>b.setAttribute("aria-pressed","false"));calc();});
+$("kInc").addEventListener("input",calc); $("kRate").addEventListener("change",calc);
+loadPreset(2);
+
+/* ---- 5 Quiz ---- */
+const QZ=[
+ {q:"Ein Pullover kostet im Laden Fr. 108.10 (Normalsatz 8,1 %). Wie viel MWST steckt im Preis?",o:["Fr. 8.76","Fr. 8.10","Fr. 10.81"],a:1,e:"Der Preis enthält bereits die MWST: 108.10 ÷ 1,081 = 100.00 netto. Die MWST beträgt also Fr. 8.10. Wer 8,1 % von 108.10 rechnet (8.76), rechnet die Steuer auf die Steuer."},
+ {q:"Welcher Satz gilt für ein Brot vom Bäcker, das Sie mitnehmen?",o:["8,1 %","3,8 %","2,6 %"],a:2,e:"Lebensmittel zum Mitnehmen gehören zum reduzierten Satz von 2,6 %. Isst man im Restaurant, gilt der Normalsatz."},
+ {q:"Eine Schreinerei verkauft einen Tisch für 600.00 + 48.60 MWST. Für das Holz hat sie 16.20 MWST bezahlt. Wie viel liefert sie ab?",o:["Fr. 48.60","Fr. 32.40","Fr. 64.80"],a:1,e:"Sie zieht die Vorsteuer ab: 48.60 − 16.20 = 32.40. Das sind 8,1 % auf ihrem Mehrwert von 400 Franken."},
+ {q:"Wer trägt die MWST wirtschaftlich?",o:["Die Unternehmen, die sie abliefern","Die Konsumentinnen und Konsumenten","Die Lieferanten der ersten Stufe"],a:1,e:"Dank Vorsteuerabzug ist die MWST für Unternehmen ein Durchlaufposten. Sie steckt im Endpreis und wird von den Konsumierenden bezahlt."},
+ {q:"Warum belastet die MWST Haushalte mit tiefem Einkommen gemessen am Einkommen stärker?",o:["Sie zahlen höhere Steuersätze","Sie geben fast ihr ganzes Einkommen für Konsum aus und sparen kaum","Sie kaufen mehr Güter zum Normalsatz"],a:1,e:"Alle zahlen die gleichen Sätze. Hohe Einkommen sparen aber einen grossen Teil, und Ersparnisse sind nicht mit MWST belastet. Tiefe Einkommen konsumieren alles. Darum ist die MWST regressiv."},
+ {q:"Warum ist die Belastung pro Konsumfranken im untersten Fünftel sogar etwas tiefer?",o:["Weil Miete (ausgenommen) und Lebensmittel (2,6 %) einen grösseren Teil des Budgets ausmachen","Weil Rentner keine MWST bezahlen","Weil tiefe Einkommen von der MWST befreit sind"],a:0,e:"Im untersten Fünftel macht Wohnen und Energie fast 40 % des Konsums aus. Die Miete ist von der MWST ausgenommen. Gemessen am Einkommen bleibt die MWST trotzdem regressiv."}
+];
+let score=0, answered=0;
+function quiz(){score=0;answered=0;$("quiz").innerHTML=QZ.map((x,i)=>`<div class="q" data-i="${i}"><b>${i+1}. ${x.q}</b><div class="opts">${x.o.map((o,j)=>`<button type="button" class="o" data-j="${j}">${o}</button>`).join("")}</div><div class="fb" aria-live="polite"></div></div>`).join("");$("qScore").textContent="";}
+$("quiz").addEventListener("click",e=>{const b=e.target.closest("button.o");if(!b)return;const box=b.closest(".q");if(box.dataset.done)return;box.dataset.done=1;
+  const x=QZ[box.dataset.i], j=Number(b.dataset.j), ok=j===x.a; answered++; if(ok)score++;
+  box.querySelectorAll("button.o").forEach((o,k)=>{o.disabled=true; if(k===x.a)o.classList.add("ok"); else if(k===j)o.classList.add("no");});
+  box.querySelector(".fb").innerHTML=`<b>${ok?"✓ Richtig.":"✗ Nicht ganz."}</b> ${x.e}`;
+  $("qScore").textContent=`${score} von ${answered} richtig`+(answered===QZ.length?" · Quiz beendet":"");});
+$("qReset").addEventListener("click",quiz); quiz();
+})();
+</script>
+
+</body></html>

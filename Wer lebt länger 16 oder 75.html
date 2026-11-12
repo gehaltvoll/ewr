@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<!-- Entscheidungen:
+Einsatztyp: Lernmaterial (Statistik/Vorsorge, Nähe EWR) · Zielgruppe: Schüler:innen · Gerät: gemischt
+Daten: BFS, Vollständige jährliche Sterbetafel 2024 (Periodentafel), Alter 0–99; ab 100 geometrisch extrapoliert, Schlussalter 115
+Funktionen: voll interaktiv (zwei Personen, Alter + Geschlecht), Regler «jährlicher Rückgang der Sterblichkeit» 0–2 % (q(x) sinkt pro Kalenderjahr relativ um r, ab heutigem Alter der Person; graue Vergleichskurve ohne Rückgang), Überlebenskurve + Verteilung Sterbealter, Vergleichswahrscheinlichkeiten (Unabhängigkeit, Tod in Jahresmitte), Tabelle, Denkfrage, Aufgaben mit einblendbaren Lösungen
+Datenhaltung: localStorage nur für gewählte Variante, Eingaben und Rückgangsrate (Komfort)
+Erklärteil: Sterblichkeit q(x) vs. rohe Sterbeziffer, Überlebenskurve als Produkt, Lebenserwartung als Fläche, Wirkung des Rückgangs; Aufgabe zum Kipppunkt (Männer ≈ 1 %, Frauen ≈ 0,7 %)
+Export: keiner
+Varianten: «Sachlich» (ruhig, flach, dünne Linien) · «Lebendig» (runde Karten, Aurora-Flächen, grössere Titel) – umschaltbar
+-->
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wer lebt länger: 16 oder 75?</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:ital,wght@0,400;0,600;1,400&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: Kopf mit Denkfrage → Eingaben → Ergebniskarten → Diagramm → Erklärung → Aufgaben → Tabelle */
+:root{
+ --nord0:#2E3440;--nord1:#3B4252;--nord2:#434C5E;--nord3:#4C566A;--nord4:#D8DEE9;--nord5:#E5E9F0;--nord6:#ECEFF4;
+ --nord7:#8FBCBB;--nord8:#88C0D0;--nord9:#81A1C1;--nord10:#5E81AC;--nord11:#BF616A;--nord12:#D08770;--nord13:#EBCB8B;--nord14:#A3BE8C;--nord15:#B48EAD;
+ --bg:var(--nord6);--surface:var(--nord5);--surface-2:var(--nord4);--text:var(--nord0);--text-muted:var(--nord3);
+ --accent:var(--nord10);--accent-soft:var(--nord9);--ok:var(--nord14);--warn:var(--nord13);--err:var(--nord11);--special:var(--nord15);--info:var(--nord8);
+ --pa:var(--nord10);--pb:var(--nord12);
+ --font:"Open Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+ --font-mono:"Google Sans Code",ui-monospace,"Cascadia Code",Consolas,"SF Mono",monospace;
+ --radius:4px;--h1:2rem;
+ color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+ --bg:var(--nord0);--surface:var(--nord1);--surface-2:var(--nord2);--text:var(--nord6);--text-muted:var(--nord4);--accent:var(--nord8);--pa:var(--nord8);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:var(--nord0);--surface:var(--nord1);--surface-2:var(--nord2);--text:var(--nord6);--text-muted:var(--nord4);--accent:var(--nord8);--pa:var(--nord8);color-scheme:dark}
+:root[data-variant="lebendig"]{--radius:18px;--h1:2.6rem}
+*{box-sizing:border-box}
+html{font-size:17px}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.6}
+button,input,select{font:inherit;color:inherit}
+.wrap{max-width:1000px;margin:0 auto;padding:24px 16px 64px;display:grid;gap:28px}
+h1{font-size:var(--h1);line-height:1.15;margin:0;font-weight:700;text-wrap:balance}
+h2{font-size:1.35rem;margin:0 0 12px;font-weight:600;text-wrap:balance}
+h3{font-size:1.05rem;margin:0 0 6px;font-weight:600}
+p{margin:0 0 10px;max-width:70ch}
+a{color:var(--accent);text-decoration:underline}
+.muted{color:var(--text-muted)}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.kicker{font-size:.85rem;color:var(--text-muted);margin:0 0 4px}
+.seg{display:inline-flex;border:1px solid var(--surface-2);border-radius:999px;overflow:hidden}
+.seg button{background:transparent;border:0;padding:6px 14px;cursor:pointer;font-size:.9rem}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--bg);font-weight:600}
+:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
+.box{background:var(--surface);border:1px solid var(--surface-2);border-radius:var(--radius);padding:18px}
+.question{border-left:4px solid var(--special)}
+.guess{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.btn{border:1px solid var(--accent);background:transparent;border-radius:var(--radius);padding:8px 16px;cursor:pointer;font-weight:600}
+.btn:hover{background:var(--surface-2)}
+.btn[aria-pressed="true"]{background:var(--accent);color:var(--bg)}
+.feedback{margin-top:10px}
+.inputs{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.pcard{border-top:4px solid var(--c)}
+.pcard .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.pcard label{font-size:.9rem;color:var(--text-muted)}
+input[type=range]{flex:1;min-width:140px;accent-color:var(--c)}
+input[type=number]{width:5.2em;padding:4px 6px;border:1px solid var(--surface-2);border-radius:6px;background:var(--bg);font-family:var(--font-mono)}
+.tag{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--c);margin-right:6px;vertical-align:middle}
+.verdict{font-size:1.1rem}
+.verdict strong{font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat{padding:12px;border:1px solid var(--surface-2);border-radius:var(--radius);background:var(--bg)}
+.stat .lbl{font-size:.82rem;color:var(--text-muted);line-height:1.35}
+.stat .vals{display:flex;flex-direction:column;gap:2px;margin-top:6px;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.stat .vals span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:var(--c)}
+.pills{display:flex;gap:10px;flex-wrap:wrap}
+.pill{padding:10px 14px;border-radius:var(--radius);border:1px solid var(--surface-2);background:var(--bg);flex:1;min-width:220px}
+.pill b{font-family:var(--font-mono);font-size:1.3rem}
+.chartwrap{overflow-x:auto}
+svg text{fill:var(--text-muted);font-family:var(--font);font-size:12px}
+svg .axis{stroke:var(--text-muted)} svg .grid{stroke:var(--surface-2)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.9rem;margin-top:6px}
+.merke{border-left:4px solid var(--special)}
+.law{border-left:4px solid var(--accent)}
+details{border:1px solid var(--surface-2);border-radius:var(--radius);padding:10px 14px;background:var(--bg);margin-top:8px}
+summary{cursor:pointer;font-weight:600;color:var(--accent)}
+ol.tasks{padding-left:1.3em;margin:0;display:grid;gap:16px}
+.tablewrap{overflow-x:auto;max-height:420px;overflow-y:auto;border:1px solid var(--surface-2);border-radius:var(--radius)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{padding:4px 10px;text-align:right;white-space:nowrap}
+th{position:sticky;top:0;background:var(--surface);font-weight:600;text-align:right}
+td{font-family:var(--font-mono);font-variant-numeric:tabular-nums;border-top:1px solid var(--surface-2)}
+tr.hl-a td{background:color-mix(in srgb,var(--pa) 22%,transparent)}
+tr.hl-b td{background:color-mix(in srgb,var(--pb) 25%,transparent)}
+.trend{border-top:4px solid var(--special)}
+:root[data-variant="lebendig"] .trend{border-top:0;background:color-mix(in srgb,var(--nord15) 20%,var(--surface))}
+.trend .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.trend input[type=range]{--c:var(--special)}
+.rval{font-family:var(--font-mono);font-weight:600;font-size:1.2rem;min-width:4.5em}
+.formula{font-family:var(--font-mono);background:var(--bg);border:1px solid var(--surface-2);border-radius:6px;padding:8px 12px;overflow-x:auto;font-size:.9rem;white-space:nowrap}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.steps .box{display:flex;flex-direction:column;gap:6px}
+.stepno{font-family:var(--font-mono);font-size:.8rem;color:var(--text-muted)}
+@media (max-width:720px){.steps{grid-template-columns:1fr}}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+footer{font-size:.85rem;color:var(--text-muted)}
+/* Variante «Lebendig» */
+:root[data-variant="lebendig"] .box{border:0;box-shadow:0 2px 0 var(--surface-2)}
+:root[data-variant="lebendig"] .pcard{border-top:0;background:color-mix(in srgb,var(--c) 20%,var(--surface))}
+:root[data-variant="lebendig"] .question{border-left:0;background:color-mix(in srgb,var(--nord15) 25%,var(--surface))}
+:root[data-variant="lebendig"] .merke{border-left:0;background:color-mix(in srgb,var(--nord13) 28%,var(--surface))}
+:root[data-variant="lebendig"] .law{border-left:0;background:color-mix(in srgb,var(--nord8) 25%,var(--surface))}
+:root[data-variant="lebendig"] .stat{border:0;background:var(--surface)}
+:root[data-variant="lebendig"] .pill{border:0;background:color-mix(in srgb,var(--nord14) 25%,var(--surface))}
+:root[data-variant="lebendig"] h2::before{content:attr(data-icon);margin-right:8px}
+:root[data-variant="lebendig"] .btn{border-radius:999px}
+@media (max-width:720px){.inputs,.two{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}}
+@media (max-width:420px){.stats{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="topbar">
+ <div><p class="kicker">Sterbetafeln der Schweiz · BFS 2024</p><h1>Wer lebt länger: 16 oder 75?</h1></div>
+ <div class="seg" role="group" aria-label="Darstellung">
+  <button id="v-sachlich" aria-pressed="true">Sachlich</button><button id="v-lebendig" aria-pressed="false">Lebendig</button>
+ </div>
+</header>
+
+<section class="box question" aria-labelledby="q-h">
+ <h2 id="q-h" data-icon="🤔">Denkfrage zuerst</h2>
+ <p>Ein 16-jähriger und ein 75-jähriger Mann leben heute in der Schweiz. Wer von beiden wird voraussichtlich <strong>das höhere Alter</strong> erreichen?</p>
+ <div class="guess">
+  <button class="btn" data-guess="16" aria-pressed="false">Der 16-Jährige</button>
+  <button class="btn" data-guess="75" aria-pressed="false">Der 75-Jährige</button>
+ </div>
+ <div class="feedback" id="feedback" aria-live="polite"></div>
+</section>
+
+<section aria-labelledby="in-h">
+ <h2 id="in-h" data-icon="🎚️">Zwei Personen vergleichen</h2>
+ <div class="inputs">
+  <div class="box pcard" style="--c:var(--pa)">
+   <h3><span class="tag"></span>Person A</h3>
+   <div class="row"><label for="ageA">Alter</label><input type="range" id="ageA" min="0" max="99" value="16"><input type="number" id="ageAn" min="0" max="99" value="16" aria-label="Alter Person A"></div>
+   <div class="row"><label for="sexA">Geschlecht</label><select id="sexA"><option value="m">Mann</option><option value="f">Frau</option></select></div>
+  </div>
+  <div class="box pcard" style="--c:var(--pb)">
+   <h3><span class="tag"></span>Person B</h3>
+   <div class="row"><label for="ageB">Alter</label><input type="range" id="ageB" min="0" max="99" value="75"><input type="number" id="ageBn" min="0" max="99" value="75" aria-label="Alter Person B"></div>
+   <div class="row"><label for="sexB">Geschlecht</label><select id="sexB"><option value="m">Mann</option><option value="f">Frau</option></select></div>
+  </div>
+ </div>
+ <div class="box trend" style="margin-top:16px">
+  <h3>Sinkt die Sterblichkeit in Zukunft weiter?</h3>
+  <div class="row"><label for="rate">Jährlicher Rückgang der Sterblichkeit</label><input type="range" id="rate" min="0" max="2" step="0.1" value="0" style="accent-color:var(--special)"><span class="rval" id="rateOut">0,0 %</span></div>
+  <p class="muted" style="font-size:.92rem;margin:0" id="rateNote"></p>
+ </div>
+</section>
+
+<section class="box" aria-labelledby="res-h">
+ <h2 id="res-h" data-icon="📊">Prognose</h2>
+ <p class="verdict" id="verdict"></p>
+ <div class="stats" id="stats"></div>
+ <div class="pills" style="margin-top:14px">
+  <div class="pill"><div class="muted" style="font-size:.85rem">Wahrscheinlichkeit, dass <strong>A ein höheres Alter</strong> erreicht als B</div><b id="pAlter"></b></div>
+  <div class="pill"><div class="muted" style="font-size:.85rem">Wahrscheinlichkeit, dass <strong>A länger lebt</strong> (B überlebt)</div><b id="pZeit"></b></div>
+ </div>
+ <p class="muted" style="font-size:.85rem;margin-top:10px"><span id="assume"></span></p>
+</section>
+
+<section class="box" aria-labelledby="ch-h">
+ <div class="topbar"><h2 id="ch-h" data-icon="📈" style="margin:0">Diagramm</h2>
+  <div class="seg" role="group" aria-label="Diagrammart"><button id="c-surv" aria-pressed="true">Überlebenskurve</button><button id="c-dist" aria-pressed="false">Sterbealter</button></div></div>
+ <p class="muted" id="chartNote" style="margin-top:8px"></p>
+ <div class="chartwrap"><svg id="chart" viewBox="0 0 760 340" width="100%" role="img" aria-label="Diagramm"></svg></div>
+ <div class="legend"><span><span class="tag" style="--c:var(--pa)"></span><span id="legA"></span></span><span><span class="tag" style="--c:var(--pb)"></span><span id="legB"></span></span><span class="muted">gestrichelt: erwartetes Sterbealter</span><span class="muted" id="legRef"></span></div>
+</section>
+
+<section aria-labelledby="ex-h">
+ <h2 id="ex-h" data-icon="💡">Warum das so ist</h2>
+ <div class="two">
+  <div class="box merke"><h3>Zwei Fragen, zwei Antworten</h3>
+   <p><strong>Wer hat mehr Jahre vor sich?</strong> Klar der 16-Jährige: rund 67 Jahre gegenüber knapp 13.</p>
+   <p><strong>Wer wird älter?</strong> Laut Tafel 2024 der 75-Jährige: Er erreicht im Mittel etwa 87,7 Jahre, der 16-Jährige nur 82,8. Das gilt aber nur, wenn die Sterblichkeit nicht weiter sinkt (Regler auf 0 %).</p></div>
+  <div class="box merke"><h3>Der Überlebenseffekt</h3>
+   <p>Der 75-Jährige hat alle Risiken zwischen 16 und 75 schon überstanden: Unfälle, frühe Krebserkrankungen, Herzinfarkte. Von 100&nbsp;000 Knaben erreichen etwa 20&nbsp;000 das Alter 75 nicht. Die Durchschnittswerte des 16-Jährigen enthalten diese frühen Todesfälle noch.</p></div>
+ </div>
+ <h3 style="margin:24px 0 10px">Von der Sterblichkeit zur Lebenserwartung</h3>
+ <div class="steps">
+  <div class="box law"><span class="stepno">Schritt 1</span><h3>Sterblichkeit q(x)</h3>
+   <p>Die Wahrscheinlichkeit, dass jemand, der gerade x Jahre alt geworden ist, vor dem nächsten Geburtstag stirbt. Beispiel Männer 2024: <span class="mono">q(75) = 0,0236</span>, also etwa 24 von 1000 Männern.</p>
+   <p class="muted" style="font-size:.9rem">Nicht verwechseln mit der rohen Sterbeziffer aus den Nachrichten (Todesfälle pro 1000 Einwohner:innen). Sie hängt stark davon ab, wie alt die Bevölkerung ist.</p></div>
+  <div class="box law"><span class="stepno">Schritt 2</span><h3>Überlebenskurve</h3>
+   <p>Ein Jahr überlebt man mit <span class="mono">1 − q(x)</span>. Mehrere Jahre überlebt man, wenn man jedes einzelne Jahr überlebt; die Wahrscheinlichkeiten werden multipliziert:</p>
+   <div class="formula">P(75 → 77) = (1 − q(75)) · (1 − q(76))</div></div>
+  <div class="box law"><span class="stepno">Schritt 3</span><h3>Lebenserwartung e(x)</h3>
+   <p>Für jedes künftige Jahr zählt man, mit welcher Wahrscheinlichkeit man es erlebt, und addiert alles. Die Lebenserwartung ist damit die <strong>Fläche unter der Überlebenskurve</strong> im Diagramm oben.</p></div>
+ </div>
+ <div class="two" style="margin-top:16px">
+  <div class="box merke"><h3>Was der Regler macht</h3>
+   <p>Bei einem Rückgang von r pro Jahr wird jedes q(x) jedes Jahr um r <em>seines eigenen Werts</em> kleiner, nicht um r Prozentpunkte. Für jemanden, der heute 16 ist, gilt mit 75, also in 59 Jahren:</p>
+   <div class="formula">q(75) · (1 − r)<sup>59</sup></div>
+   <p style="margin-top:8px">Bei 1 % pro Jahr ist das Risiko dann nur noch gut halb so gross wie heute (2,36 % → 1,31 %).</p></div>
+  <div class="box merke"><h3>Wer profitiert davon?</h3>
+   <p>Ein Rückgang wirkt für jede Person erst ab ihrem heutigen Alter und nur, solange sie lebt. Der 16-Jährige erlebt rund 70 Jahre mit sinkenden Risiken, der 75-Jährige nur etwa 13. Bei 1 % pro Jahr gewinnt der 16-jährige Mann knapp 6 Jahre, der 75-Jährige nur gut ein halbes.</p>
+   <p>Früher stieg die Lebenserwartung vor allem, weil weniger Kinder starben. Heute ist q bis etwa 50 schon sehr klein; Gewinne kommen fast nur noch aus dem höheren Alter.</p></div>
+ </div>
+ <div class="box law" style="margin-top:16px"><h3>Was eine Sterbetafel ist</h3>
+  <p>Die <strong>Periodensterbetafel</strong> des BFS nimmt die Sterbewahrscheinlichkeiten <span class="mono">q(x)</span> eines Kalenderjahres (hier 2024) und spielt damit eine fiktive Gruppe von 100&nbsp;000 Neugeborenen durch. <span class="mono">l(x)</span> sind die Überlebenden im Alter x, <span class="mono">e(x)</span> die noch zu erwartenden Lebensjahre.</p>
+  <p>Die Tafel ist <strong>keine echte Prognose</strong>: Sie friert die Sterblichkeit von 2024 ein. Sinkt die Sterblichkeit weiter, profitiert der 16-Jährige davon viel länger als der 75-Jährige. Seine tatsächliche Lebenserwartung dürfte also höher liegen. Mit dem Regler «Rückgang der Sterblichkeit» kannst du eine solche Annahme selbst treffen. So arbeitet auch eine Kohortensterbetafel: Sie verfolgt einen Jahrgang und setzt für die Zukunft sinkende Sterberisiken voraus.</p></div>
+</section>
+
+<section aria-labelledby="t-h">
+ <h2 id="t-h" data-icon="✏️">Aufgaben</h2>
+ <ol class="tasks">
+  <li><p>Lies in der Tabelle unten für Männer <span class="mono">q(16)</span> und <span class="mono">q(75)</span> ab. Wie viel Mal grösser ist das Risiko des 75-Jährigen, im nächsten Jahr zu sterben?</p>
+   <details><summary>Lösung</summary><p><span class="mono">q(16) = 0.000128</span>, <span class="mono">q(75) = 0.023635</span>. Das Risiko ist rund <strong>185-mal</strong> grösser (1,3 von 10&nbsp;000 gegenüber 2,4 von 100).</p></details></li>
+  <li><p>Bei Geburt beträgt die Lebenserwartung eines Mannes 82,4 Jahre. Warum erreicht ein 75-Jähriger im Mittel trotzdem 87,7 Jahre?</p>
+   <details><summary>Lösung</summary><p>Die 82,4 Jahre sind ein Durchschnitt über alle Neugeborenen, auch über jene, die jung sterben. Wer 75 ist, gehört sicher nicht mehr zu dieser Gruppe. Die bedingte Lebenserwartung «gegeben, man ist schon 75» liegt deshalb höher.</p></details></li>
+  <li><p>Wie gross ist laut Tool die Wahrscheinlichkeit, dass der 16-Jährige ein höheres Alter erreicht als der 75-Jährige? Und wie gross, dass er ihn überlebt? Erkläre den Unterschied.</p>
+   <details><summary>Lösung</summary><p>Ein höheres Alter erreicht er nur mit rund <strong>40&nbsp;%</strong>, überleben wird er den 75-Jährigen aber mit über <strong>99&nbsp;%</strong>. Die erste Frage vergleicht das Sterbealter, die zweite den Todeszeitpunkt im Kalender.</p></details></li>
+  <li><p>Verändere Alter und Geschlecht von Person B. Ab welchem Alter erreicht ein Mann im Mittel ein Sterbealter von mindestens 90 Jahren? Und eine Frau?</p>
+   <details><summary>Lösung</summary><p>Männer ab <strong>82</strong> Jahren (erwartet 90,1), Frauen schon ab <strong>78</strong> Jahren (erwartet 90,2).</p></details></li>
+  <li><p>Stelle Person A auf 16 und Person B auf 75 (beide Männer). Ab welchem jährlichen Rückgang der Sterblichkeit erreicht der 16-Jährige im Mittel das höhere Alter? Wie ist es bei Frauen?</p>
+   <details><summary>Lösung</summary><p>Bei Männern kippt es bei rund <strong>1 %</strong> pro Jahr (16-Jähriger 88,5 gegenüber 88,3 Jahren). Bei Frauen schon bei etwa <strong>0,7 %</strong> (90,1 gegenüber 90,0 Jahren).</p></details></li>
+  <li><p>Bei 1 % Rückgang pro Jahr gewinnt der 16-Jährige fast 6 Jahre Lebenserwartung, der 75-Jährige nur gut ein halbes Jahr. Erkläre den Unterschied.</p>
+   <details><summary>Lösung</summary><p>Der Rückgang wirkt nur auf die Jahre, die jemand noch vor sich hat. Der 16-Jährige erlebt Jahrzehnte mit immer tieferen Risiken; wenn er alt ist, sind sie deutlich kleiner als heute. Der 75-Jährige lebt nur noch wenige Jahre, die Risiken sinken in dieser Zeit kaum.</p></details></li>
+  <li><p>Nenne einen Grund, warum die Zahlen der Tafel 2024 für den 16-Jährigen die Wirklichkeit vermutlich unterschätzen.</p>
+   <details><summary>Lösung</summary><p>Die Periodentafel geht von der Sterblichkeit 2024 aus. Medizinischer Fortschritt und bessere Lebensbedingungen senken die Sterblichkeit voraussichtlich weiter; davon profitiert der 16-Jährige über Jahrzehnte.</p></details></li>
+ </ol>
+</section>
+
+<section aria-labelledby="tab-h">
+ <h2 id="tab-h" data-icon="📋">Sterbetafel 2024</h2>
+ <div class="topbar" style="margin-bottom:10px"><p class="muted" style="margin:0">Werte von 2024, ohne Rückgang. Hervorgehoben: Alter von Person A und B.</p>
+  <div class="seg" role="group" aria-label="Tabelle Geschlecht"><button id="t-m" aria-pressed="true">Männer</button><button id="t-f" aria-pressed="false">Frauen</button></div></div>
+ <div class="tablewrap"><table><thead><tr><th>Alter x</th><th>q(x)</th><th>l(x)</th><th>d(x)</th><th>e(x)</th><th>x + e(x)</th></tr></thead><tbody id="tbody"></tbody></table></div>
+</section>
+
+<footer>
+ <p>Quelle: Bundesamt für Statistik (BFS), Vollständige jährliche Sterbetafel 2024, Männer (su-d-01.04.02.02.04) und Frauen (su-d-01.04.02.02.05), ständige Wohnbevölkerung; abgerufen über <a href="https://www.lifetable.de/File/GetDocument/data/CHE/CHE000020242024CU1.pdf">lifetable.de</a>. Werte ab Alter 100 sind hier geschätzt (Fortschreibung von q(x)). Der Rückgang der Sterblichkeit ist eine frei wählbare Annahme, keine BFS-Prognose. Berechnete Lebenserwartungen weichen höchstens rundungsbedingt von den BFS-Werten ab.</p>
+</footer>
+</div>
+<script>
+const Q={m:[0.003368,0.000170,0.000091,0.000077,0.000069,0.000065,0.000063,0.000064,0.000066,0.000069,0.000072,0.000074,0.000076,0.000076,0.000080,0.000093,0.000128,0.000191,0.000287,0.000396,0.000472,0.000497,0.000484,0.000458,0.000436,0.000422,0.000415,0.000412,0.000415,0.000423,0.000435,0.000451,0.000472,0.000498,0.000528,0.000563,0.000604,0.000649,0.000701,0.000759,0.000823,0.000893,0.000970,0.001053,0.001142,0.001238,0.001342,0.001455,0.001579,0.001717,0.001870,0.002042,0.002236,0.002458,0.002712,0.003002,0.003333,0.003708,0.004131,0.004608,0.005140,0.005731,0.006385,0.007101,0.007881,0.008730,0.009655,0.010666,0.011773,0.012987,0.014326,0.015806,0.017448,0.019279,0.021330,0.023635,0.026238,0.029190,0.032552,0.036400,0.040823,0.045933,0.051865,0.058787,0.066891,0.076334,0.087263,0.099812,0.114096,0.130192,0.148119,0.167817,0.189126,0.211761,0.235394,0.260032,0.285861,0.313179,0.342418,0.374162],
+f:[0.003316,0.000125,0.000107,0.000127,0.000123,0.000102,0.000077,0.000054,0.000038,0.000028,0.000022,0.000021,0.000023,0.000032,0.000050,0.000077,0.000108,0.000136,0.000157,0.000170,0.000176,0.000176,0.000172,0.000169,0.000166,0.000165,0.000166,0.000169,0.000173,0.000179,0.000187,0.000197,0.000209,0.000225,0.000243,0.000265,0.000290,0.000320,0.000354,0.000394,0.000438,0.000488,0.000544,0.000605,0.000671,0.000743,0.000822,0.000907,0.000999,0.001100,0.001210,0.001329,0.001460,0.001604,0.001762,0.001936,0.002127,0.002339,0.002572,0.002832,0.003119,0.003439,0.003795,0.004192,0.004637,0.005135,0.005693,0.006319,0.007023,0.007815,0.008706,0.009711,0.010845,0.012125,0.013574,0.015220,0.017098,0.019251,0.021731,0.024604,0.027947,0.031862,0.036470,0.041925,0.048411,0.056091,0.065129,0.075689,0.087924,0.101966,0.117902,0.135752,0.155446,0.176795,0.199498,0.223269,0.247777,0.272621,0.297331,0.321385]};
+const OMEGA=115;
+function buildTable(sex){const q=Q[sex].slice();const g=q[99]/q[98];for(let k=100;k<OMEGA;k++)q.push(Math.min(1,q[k-1]*g));q.push(1);
+ const l=[100000];for(let k=0;k<=OMEGA;k++)l.push(l[k]*(1-q[k]));
+ const L=[];for(let k=0;k<=OMEGA;k++){const a=k===0?0.1:0.5;L.push(l[k+1]+a*(l[k]-l[k+1]));}
+ const T=new Array(OMEGA+2).fill(0);for(let k=OMEGA;k>=0;k--)T[k]=T[k+1]+L[k];
+ const e=l.slice(0,OMEGA+1).map((v,k)=>T[k]/v);return {q,l,e};}
+const TAB={m:buildTable('m'),f:buildTable('f')};
+function person(age,sex,r){r=r||0;const t=TAB[sex];const qe=[];const l=[1];
+ for(let k=age;k<=OMEGA;k++){const qq=k===OMEGA?1:Math.min(1,t.q[k]*Math.pow(1-r,k-age));qe.push(qq);l.push(l[l.length-1]*(1-qq));}
+ const dist=[];let T=0;for(let i=0;i<qe.length;i++){dist.push({age:age+i,p:l[i]-l[i+1]});T+=l[i+1]+(age+i===0?0.1:0.5)*(l[i]-l[i+1]);}
+ let c=0,median=null;for(const d of dist){if(c+d.p>=0.5){median=d.age+(0.5-c)/d.p;break;}c+=d.p;}
+ const reach=a=>a<=age?1:(a-age>=l.length?0:l[a-age]);
+ return {age,sex,r,q:qe[0],qAt:a=>qe[a-age],e:T,death:age+T,median,dist,reach};}
+function compare(A,B,mode){let w=0;for(const a of A.dist)for(const b of B.dist){const ta=mode==='alter'?a.age:a.age-A.age, tb=mode==='alter'?b.age:b.age-B.age;
+ if(ta>tb)w+=a.p*b.p;else if(ta===tb)w+=0.5*a.p*b.p;}return w;}
+
+
+const $=id=>document.getElementById(id);
+const fmt=(v,d=1)=>v.toLocaleString('de-DE',{useGrouping:false,minimumFractionDigits:d,maximumFractionDigits:d});
+const pct=v=>v>=0.995?'> 99 %':v<0.005?'< 1 %':fmt(v*100,0)+' %';
+const sexName={m:'Mann',f:'Frau'};
+let chartMode='surv',tableSex='m';
+function store(k,v){try{localStorage.setItem('sterbetafel-'+k,v)}catch(e){}}
+function load(k){try{return localStorage.getItem('sterbetafel-'+k)}catch(e){return null}}
+function setVariant(v){document.documentElement.dataset.variant=v;$('v-sachlich').setAttribute('aria-pressed',v==='sachlich');$('v-lebendig').setAttribute('aria-pressed',v==='lebendig');store('variant',v)}
+$('v-sachlich').onclick=()=>setVariant('sachlich');$('v-lebendig').onclick=()=>setVariant('lebendig');
+function bind(r,n){r.addEventListener('input',()=>{n.value=r.value;update()});n.addEventListener('input',()=>{let v=Math.max(0,Math.min(99,parseInt(n.value)||0));r.value=v;update()});n.addEventListener('change',()=>{n.value=r.value})}
+$('rate').addEventListener('input',update);
+bind($('ageA'),$('ageAn'));bind($('ageB'),$('ageBn'));$('sexA').onchange=update;$('sexB').onchange=update;
+$('c-surv').onclick=()=>{chartMode='surv';$('c-surv').setAttribute('aria-pressed',true);$('c-dist').setAttribute('aria-pressed',false);update()};
+$('c-dist').onclick=()=>{chartMode='dist';$('c-dist').setAttribute('aria-pressed',true);$('c-surv').setAttribute('aria-pressed',false);update()};
+$('t-m').onclick=()=>{tableSex='m';$('t-m').setAttribute('aria-pressed',true);$('t-f').setAttribute('aria-pressed',false);update()};
+$('t-f').onclick=()=>{tableSex='f';$('t-f').setAttribute('aria-pressed',true);$('t-m').setAttribute('aria-pressed',false);update()};
+document.querySelectorAll('[data-guess]').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('[data-guess]').forEach(x=>x.setAttribute('aria-pressed',x===b));
+ const ok=b.dataset.guess==='75';
+ $('feedback').innerHTML=ok?'<strong>✓ Richtig.</strong> Der 75-Jährige erreicht im Mittel 87,7 Jahre, der 16-Jährige 82,8 Jahre. Mehr Jahre vor sich hat aber der 16-Jährige.'
+ :'<strong>✗ Überraschend, aber nein.</strong> Der 16-Jährige hat zwar viel mehr Jahre vor sich, erreicht aber im Mittel nur 82,8 Jahre. Der 75-Jährige kommt auf 87,7 Jahre. Unten siehst du, warum.';});
+function label(p,n){return `Person ${n} (${p.age}, ${sexName[p.sex]})`}
+function update(){
+ const r=+$('rate').value/100;
+ const A=person(+$('ageA').value,$('sexA').value,r),B=person(+$('ageB').value,$('sexB').value,r);
+ const A0=person(A.age,A.sex,0),B0=person(B.age,B.sex,0);
+ store('in',JSON.stringify([A.age,A.sex,B.age,B.sex,$('rate').value]));
+ $('rateOut').textContent=fmt(r*100)+' %';
+ const young=A.age<=B.age?[A,'A']:[B,'B'],old=young[1]==='A'?[B,'B']:[A,'A'];
+ const yrs=old[0].age-young[0].age;
+ $('rateNote').innerHTML=r===0?'Bei 0 % gilt die Tafel 2024 unverändert: Alle Sterberisiken bleiben so, wie sie 2024 waren.':
+  (yrs>0?`Person ${young[1]} ist in ${yrs} Jahren so alt wie Person ${old[1]} heute. Ihr Sterberisiko in diesem Alter beträgt dann ${fmt(young[0].qAt(old[0].age)*100,2)} % statt heute ${fmt(old[0].q*100,2)} %. `:'')+
+  `Erwartetes Sterbealter mit Rückgang: A ${fmt(A.death)} (statt ${fmt(A0.death)}), B ${fmt(B.death)} (statt ${fmt(B0.death)}) Jahre.`;
+ $('assume').textContent='Annahmen: beide Leben unabhängig voneinander; '+(r===0?'Sterberisiken bleiben auf dem Stand 2024.':`alle Sterberisiken sinken jedes Jahr um ${fmt(r*100)} %.`);
+ $('legRef').textContent=r===0?'':'dünn: ohne Rückgang';
+ const older=Math.abs(A.death-B.death)<0.05?null:(A.death>B.death?'A':'B');
+ const more=Math.abs(A.e-B.e)<0.05?null:(A.e>B.e?'A':'B');
+ $('verdict').innerHTML=(older?`<strong>Person ${older}</strong> erreicht voraussichtlich das höhere Alter: ${fmt(Math.max(A.death,B.death))} gegenüber ${fmt(Math.min(A.death,B.death))} Jahren. `:'Beide erreichen im Mittel dasselbe Alter. ')+
+  (more?`Mehr Lebensjahre vor sich hat <strong>Person ${more}</strong>: ${fmt(Math.max(A.e,B.e))} gegenüber ${fmt(Math.min(A.e,B.e))} Jahren.`:'');
+ const rows=[['Noch zu erwartende Lebensjahre e(x)',p=>fmt(p.e)+' J.'],['Erwartetes Sterbealter x + e(x)',p=>fmt(p.death)+' J.'],['Sterbealter, das die Hälfte erreicht (Median)',p=>fmt(p.median)+' J.'],['Sterberisiko im nächsten Jahr q(x)',p=>fmt(p.q*100,p.q<0.001?3:2)+' %']];
+ $('stats').innerHTML=rows.map(([l,f])=>`<div class="stat"><div class="lbl">${l}</div><div class="vals"><span style="--c:var(--pa)">A: ${f(A)}</span><span style="--c:var(--pb)">B: ${f(B)}</span></div></div>`).join('');
+ $('pAlter').textContent=pct(compare(A,B,'alter'));$('pZeit').textContent=pct(compare(A,B,'zeit'));
+ $('legA').textContent=label(A,'A');$('legB').textContent=label(B,'B');
+ drawChart(A,B,A0,B0);drawTable(A,B);
+}
+function drawChart(A,B,A0,B0){
+ const W=760,H=340,m={l:52,r:16,t:16,b:40},x0=Math.max(0,Math.floor(Math.min(A.age,B.age)/10)*10),x1=110;
+ const X=a=>m.l+(a-x0)/(x1-x0)*(W-m.l-m.r);let s='';
+ let ymax=1,Y;
+ if(chartMode==='surv'){Y=v=>H-m.b-v*(H-m.t-m.b);$('chartNote').textContent='Anteil, der ein bestimmtes Alter noch erlebt – ausgehend vom heutigen Alter der Person.';}
+ else{ymax=Math.max(...A.dist.map(d=>d.p),...B.dist.map(d=>d.p));ymax=Math.ceil(ymax*100/2)*2/100;Y=v=>H-m.b-v/ymax*(H-m.t-m.b);$('chartNote').textContent='Wahrscheinlichkeit, in einem bestimmten Alter zu sterben.';}
+ const steps=5;for(let i=0;i<=steps;i++){const v=ymax*i/steps,y=Y(v);s+=`<line class="grid" x1="${m.l}" x2="${W-m.r}" y1="${y}" y2="${y}"/><text x="${m.l-8}" y="${y+4}" text-anchor="end">${fmt(v*100,chartMode==='surv'?0:1)} %</text>`}
+ for(let a=x0;a<=x1;a+=10){s+=`<text x="${X(a)}" y="${H-m.b+18}" text-anchor="middle">${a}</text>`}
+ s+=`<line class="axis" x1="${m.l}" x2="${W-m.r}" y1="${H-m.b}" y2="${H-m.b}"/><text x="${(W+m.l)/2}" y="${H-4}" text-anchor="middle">Alter in Jahren</text>`;
+ [[A,'var(--pa)',0],[B,'var(--pb)',1]].forEach(([p,c,i])=>{
+  const p0=i?B0:A0;
+  if(chartMode==='surv'&&p.r>0){let r0=[];for(let a=p.age;a<=x1;a++)r0.push(`${X(a)},${Y(p0.reach(a))}`);s+=`<polyline points="${r0.join(' ')}" fill="none" stroke="${c}" stroke-width="1" stroke-opacity=".6"/>`;}
+  if(chartMode==='surv'){let pts=[];for(let a=p.age;a<=x1;a++)pts.push(`${X(a)},${Y(p.reach(a))}`);
+   s+=`<polyline points="${X(p.age)},${Y(0)} ${pts.join(' ')} ${X(x1)},${Y(0)}" fill="${c}" fill-opacity=".12" stroke="none"/><polyline points="${pts.join(' ')}" fill="none" stroke="${c}" stroke-width="2.5"/><circle cx="${X(p.age)}" cy="${Y(1)}" r="4.5" fill="${c}"/>`;}
+  else{const bw=(X(1)-X(0))*0.45;p.dist.forEach(d=>{if(d.age>x1)return;const xx=X(d.age+0.5)+(i?0:-bw);s+=`<rect x="${xx}" y="${Y(d.p)}" width="${bw}" height="${Y(0)-Y(d.p)}" fill="${c}" opacity=".85"/>`});}
+  const xd=X(p.death);s+=`<line x1="${xd}" x2="${xd}" y1="${m.t}" y2="${H-m.b}" stroke="${c}" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${xd+(i?5:-5)}" y="${m.t+12+i*16}" text-anchor="${i?'start':'end'}" style="fill:${c};font-weight:600">${fmt(p.death)}</text>`;
+ });
+ $('chart').innerHTML=s;
+}
+function drawTable(A,B){
+ const t=TAB[tableSex];let h='';
+ for(let a=0;a<=99;a++){const cls=(A.sex===tableSex&&A.age===a)?'hl-a':(B.sex===tableSex&&B.age===a)?'hl-b':'';
+  h+=`<tr class="${cls}"><td>${a}</td><td>${t.q[a].toFixed(6)}</td><td>${Math.round(t.l[a]).toLocaleString('de-CH')}</td><td>${Math.round(t.l[a]-t.l[a+1]).toLocaleString('de-CH')}</td><td>${fmt(t.e[a])}</td><td>${fmt(a+t.e[a])}</td></tr>`}
+ $('tbody').innerHTML=h;
+}
+(function init(){setVariant(load('variant')||'sachlich');try{const v=JSON.parse(load('in'));if(v){$('ageA').value=$('ageAn').value=v[0];$('sexA').value=v[1];$('ageB').value=$('ageBn').value=v[2];$('sexB').value=v[3];if(v[4]!=null)$('rate').value=v[4]}}catch(e){}update()})();
+</script>
+</body>
+</html>
