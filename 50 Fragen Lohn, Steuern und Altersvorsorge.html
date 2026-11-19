@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- Entscheidungen:
+Einsatztyp: Lernmaterial EWR/Recht, Zielgruppe Schüler:innen (Sie-Form, Schweizer Rechtschreibung, kein Geviertstrich), Gerät gemischt.
+Inhalt: 50 Multiple-Choice-Fragen zu den Theorieblättern (Lohnausweis und Abzüge, Steuern, Altersvorsorge, Pensionskasse) und den Lernseiten
+  Lohnabrechnung erklärt, Vom Lohn zum steuerbaren Einkommen, Steuertreppe Zürich, Mehrwertsteuer erklärt, Wer trägt die Mehrwertsteuer?,
+  So entsteht die AHV-Rente, Drei Säulen im Alter, Umlage oder Kapitaldeckung, Bevölkerung Schweiz. Werte Stand 2026.
+Funktion: voll interaktiv. Zwei Modi: «Üben» (sofortige Rückmeldung mit Begründung und Quelle) und «Test» (Antworten frei wählbar und änderbar,
+  Auswertung am Ende). Themenfilter, Antworten pro Frage gemischt, Punktestand mit Note (5 × Anteil richtig + 1, auf Viertel gerundet),
+  «Falsche wiederholen», «Neu starten».
+Datenhaltung: nur Komfort (gewählter Modus in localStorage). Antworten werden nicht gespeichert. Kein Export.
+Design: Nord-Farbschema, Open Sans für Text, Google Sans Code für Zahlen und Kennzeichnungen. Hell/Dunkel folgt System.
+Gewählte Variante: «Klar» (sachlich, feine Linien, kleine Radien, Frost als einziger Akzent). Variante «Lebendig» und Umschalter entfernt.
+-->
+<title>50 Fragen: Lohn, Steuern und Altersvorsorge</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400;600&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: Kopf mit Modus und Variante, Themen-Knöpfe, mitlaufende Punkteleiste, darunter die Fragekarten. */
+:root{
+  --nord0:#2E3440;--nord1:#3B4252;--nord2:#434C5E;--nord3:#4C566A;--nord4:#D8DEE9;--nord5:#E5E9F0;--nord6:#ECEFF4;
+  --nord7:#8FBCBB;--nord8:#88C0D0;--nord9:#81A1C1;--nord10:#5E81AC;--nord11:#BF616A;--nord12:#D08770;--nord13:#EBCB8B;--nord14:#A3BE8C;--nord15:#B48EAD;
+  --bg:var(--nord6);--surface:#fff;--surface-2:var(--nord5);--line:var(--nord4);--text:var(--nord0);--text-muted:var(--nord3);
+  --accent:var(--nord10);--accent-soft:var(--nord9);--on-accent:#fff;
+  --ok:var(--nord14);--bad:var(--nord11);--warn:var(--nord13);
+  --ok-soft:rgba(163,190,140,.28);--bad-soft:rgba(191,97,106,.18);--sel-soft:rgba(94,129,172,.14);
+  --font:"Open Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"Google Sans Code",ui-monospace,"Cascadia Code",Consolas,"SF Mono",monospace;
+  --r:4px;--r-sm:3px;--h1:2rem;--h-w:600;--card-border:1px solid var(--line);--card-shadow:none;--gap:14px;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:var(--nord0);--surface:var(--nord1);--surface-2:var(--nord2);--line:var(--nord2);--text:var(--nord6);--text-muted:var(--nord4);
+  --accent:var(--nord8);--on-accent:var(--nord0);--ok-soft:rgba(163,190,140,.18);--bad-soft:rgba(191,97,106,.22);--sel-soft:rgba(136,192,208,.16);color-scheme:dark}}
+  --card-shadow:0 1px 2px rgba(46,52,64,.06),0 6px 18px rgba(46,52,64,.07);--gap:16px}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:17px;line-height:1.6}
+button{font:inherit;color:inherit}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:820px;margin:0 auto;padding:max(24px,env(safe-area-inset-top)) 16px max(80px,env(safe-area-inset-bottom))}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.kicker{font-family:var(--font-mono);font-size:.78rem;color:var(--text-muted);letter-spacing:.02em}
+h1{font-size:var(--h1);line-height:1.15;margin:4px 0 8px;font-weight:var(--h-w)}
+.lead{color:var(--text-muted);margin:0 0 18px;max-width:68ch}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;padding:6px 12px;cursor:pointer;font-size:.88rem}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);font-weight:600}
+.controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:14px}
+.controls label{font-size:.82rem;color:var(--text-muted);margin-right:6px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 6px}
+.chip{border:1px solid var(--line);background:var(--surface);padding:5px 12px;border-radius:99px;cursor:pointer;font-size:.86rem;display:inline-flex;gap:7px;align-items:center}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.chip .mono{font-size:.8em;opacity:.8}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0 12px;border-bottom:1px solid var(--line);margin-bottom:20px}
+.score{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;font-weight:600;font-size:.95rem}
+.score .mono{font-weight:600}
+.prog{height:8px;background:var(--surface-2);border-radius:99px;overflow:hidden;margin-top:8px;display:flex}
+.prog i{display:block;height:100%;transition:width .25s}
+.prog .g{background:var(--ok)}.prog .r{background:var(--bad)}.prog .s{background:var(--accent-soft)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.btn{font-size:.9rem;font-weight:600;border:1px solid var(--accent);background:transparent;color:var(--accent);padding:6px 14px;border-radius:var(--r-sm);cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--on-accent)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn:focus-visible,.opt:focus-visible,.chip:focus-visible,.seg button:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
+.q{background:var(--surface);border:var(--card-border);box-shadow:var(--card-shadow);border-radius:var(--r);padding:16px 18px;margin:0 0 var(--gap);position:relative}
+.meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:.78rem;color:var(--text-muted);margin-bottom:6px}
+.meta .num{font-family:var(--font-mono);font-weight:600}
+.q h2{font-size:1.04rem;font-weight:600;margin:0 0 12px;line-height:1.45}
+.opts{display:grid;gap:8px}
+.opt{text-align:left;width:100%;border:1px solid var(--line);background:var(--surface);padding:9px 12px;border-radius:var(--r-sm);cursor:pointer;display:flex;gap:10px;align-items:flex-start;line-height:1.45}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt .k{flex:0 0 auto;width:1.65em;height:1.65em;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-family:var(--font-mono);font-size:.78rem;font-weight:600}
+.opt .tag{margin-left:auto;flex:0 0 auto;font-size:.8rem;font-weight:700;padding-left:8px}
+.opt:disabled{cursor:default}
+.opt.sel{border-color:var(--accent);background:var(--sel-soft)}
+.opt.sel .k{background:var(--accent);color:var(--on-accent)}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.fb{margin-top:12px;padding:10px 12px;border-radius:var(--r-sm);font-size:.93rem;border-left:4px solid var(--ok);background:var(--surface-2)}
+.fb.no{border-left-color:var(--bad)}
+.fb b{display:block;margin-bottom:2px}
+.done{background:var(--surface);border:var(--card-border);box-shadow:var(--card-shadow);border-radius:var(--r);padding:20px;margin:6px 0 16px;text-align:center}
+.done strong{font-size:1.5rem;display:block;font-weight:var(--h-w)}
+.done .note{font-family:var(--font-mono);font-size:2.2rem;font-weight:600;display:block;margin:4px 0}
+.hide{display:none!important}
+footer{color:var(--text-muted);font-size:.82rem;margin-top:30px}
+@media (max-width:520px){.opt .tag{font-size:.72rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <span class="kicker">EWR · Lohn, Steuern, Altersvorsorge · Stand 2026</span>
+  </div>
+  <h1>50 Fragen zu Lohn, Steuern und Altersvorsorge</h1>
+  <p class="lead">Wählen Sie bei jeder Frage die richtige Antwort. Im Modus «Üben» sehen Sie sofort, ob sie stimmt, mit Begründung und Quelle. Im Modus «Test» beantworten Sie zuerst alles und lassen dann auswerten.</p>
+
+  <div class="controls">
+    <div><label id="mLbl">Modus</label><span class="seg" role="group" aria-labelledby="mLbl">
+      <button type="button" data-m="ueben">Üben</button><button type="button" data-m="test">Test</button></span></div>
+  </div>
+  <div class="chips" id="chips" role="group" aria-label="Themen"></div>
+
+  <div class="bar">
+    <div class="score" id="score"></div>
+    <div class="prog" aria-hidden="true"><i class="g" id="pOk"></i><i class="r" id="pNo"></i><i class="s" id="pSel"></i></div>
+    <div class="actions">
+      <button class="btn primary hide" id="eval" type="button">Test auswerten</button>
+      <button class="btn" id="retry" type="button" disabled>Falsche wiederholen</button>
+      <button class="btn" id="reset" type="button">Neu starten</button>
+    </div>
+  </div>
+
+  <div class="done hide" id="done" aria-live="polite"></div>
+  <div id="list"></div>
+
+  <footer>Grundlage: Theorieblätter «Lohnausweis und Abzüge», «Steuern», «Altersvorsorge», «Pensionskasse: von Guthaben zu Rente» sowie die Lernseiten der Einheit. Werte Stand 2026.</footer>
+</div>
+
+<script>
+(function(){
+const T = {
+  lohn:"Lohn und Lohnausweis", einkommen:"Steuerbares Einkommen", steuern:"Steuern allgemein", zh:"Steuertreppe Zürich",
+  mwst:"Mehrwertsteuer", vorsorge:"Drei Säulen", ahv:"AHV-Rente", pk:"Pensionskasse", bev:"Bevölkerung"
+};
+const Q = [
+["lohn","Theorieblatt Lohnausweis","Wofür wird der Lohnabzug für die EO verwendet?",
+ ["Lohnersatz bei Militär- und Zivildienst sowie bei Mutter- und Vaterschaft","Lohnersatz bei längerer Krankheit","Renten und Eingliederung bei Invalidität","Taggelder bei Arbeitslosigkeit"],
+ "EO heisst Erwerbsersatzordnung. Lohnersatz bei Krankheit wäre die freiwillige Krankentaggeldversicherung (KTG)."],
+["lohn","Lohnabrechnung erklärt","Wie viel Prozent des Bruttolohns zahlen Arbeitnehmende 2026 zusammen für AHV, IV und EO?",
+ ["5,30 %","4,35 %","8,70 %","10,60 %"],
+ "AHV 4,35 % + IV 0,70 % + EO 0,25 % = 5,30 %. Der Arbeitgeber zahlt noch einmal gleich viel, zusammen also 10,6 %."],
+["lohn","Lohnabrechnung erklärt","Lara verdient CHF 5'000 brutto pro Monat. Wie hoch ist ihr Abzug für AHV/IV/EO?",
+ ["CHF 265.00","CHF 217.50","CHF 530.00","CHF 55.00"],
+ "5'000 × 5,30 % = CHF 265.00. CHF 530 wäre der Beitrag von Arbeitnehmerin und Arbeitgeber zusammen, CHF 55 der ALV-Abzug."],
+["lohn","Theorieblatt Lohnausweis","Wer bezahlt die Prämie für die Berufsunfallversicherung (BU)?",
+ ["Der Arbeitgeber allein","Die arbeitnehmende Person allein","Beide je zur Hälfte","Der Bund"],
+ "Die BU bezahlt der Arbeitgeber. Die Nichtberufsunfallversicherung (NBU) wird dagegen vom Lohn abgezogen."],
+["lohn","Theorieblatt Lohnausweis","Wann ist man über den Arbeitgeber gegen Nichtberufsunfälle (NBU) versichert?",
+ ["Wenn man mindestens 8 Stunden pro Woche beim selben Arbeitgeber arbeitet","Immer, ab dem ersten Arbeitstag, unabhängig vom Pensum","Erst ab einem Jahreslohn von CHF 22'680","Nur wenn man über 25 Jahre alt ist"],
+ "Die NBU gilt nur bei mindestens 8 Wochenstunden beim selben Arbeitgeber. Wer weniger arbeitet, ist über die Krankenkasse gegen Unfall versichert."],
+["lohn","Theorieblatt Pensionskasse","Ab welchem Jahreslohn ist man 2026 obligatorisch in einer Pensionskasse versichert?",
+ ["CHF 22'680","CHF 26'460","CHF 64'260","CHF 90'720"],
+ "Die Eintrittsschwelle beträgt CHF 22'680. CHF 26'460 ist der Koordinationsabzug, CHF 90'720 der obere Grenzbetrag."],
+["lohn","Theorieblatt Lohnausweis","Welche Ziffer des Lohnausweises übertragen Sie in die Steuererklärung?",
+ ["Ziffer 11: Nettolohn","Ziffer 8: Bruttolohn total","Ziffer 13: Spesenvergütungen","Ziffer 1: Lohn"],
+ "Ziffer 11 ist der Bruttolohn minus Sozialversicherungsbeiträge (Ziffer 9) und berufliche Vorsorge (Ziffer 10)."],
+["lohn","Theorieblatt Lohnausweis","Warum sinkt der Nettolohn im Verhältnis zum Bruttolohn, wenn man älter wird?",
+ ["Die Altersgutschriften der Pensionskasse steigen mit dem Alter","Der AHV-Satz steigt mit jedem Lebensjahr","Ab 45 wird die ALV doppelt abgezogen","Die Steuern werden ab 35 direkt vom Lohn abgezogen"],
+ "Die Altersgutschriften steigen von 7 % über 10 % und 15 % auf 18 % des koordinierten Lohnes. Die arbeitnehmende Person trägt bis zur Hälfte davon."],
+
+["einkommen","Vom Lohn zum steuerbaren Einkommen","In welcher Reihenfolge kommt man vom Lohn zum steuerbaren Einkommen?",
+ ["Bruttolohn → Nettolohn → Reineinkommen → steuerbares Einkommen","Nettolohn → Bruttolohn → steuerbares Einkommen → Reineinkommen","Bruttolohn → steuerbares Einkommen → Nettolohn → Reineinkommen","Reineinkommen → Bruttolohn → Nettolohn → steuerbares Einkommen"],
+ "Vom Bruttolohn gehen die Sozialversicherungen ab (Nettolohn), dann Berufskosten und allgemeine Abzüge (Reineinkommen), zuletzt die Sozialabzüge."],
+["einkommen","Theorieblatt Steuern","Was besagt das Nettoprinzip bei der Einkommenssteuer?",
+ ["Kosten, die nötig sind, um das Einkommen zu erzielen, dürfen abgezogen werden","Besteuert wird immer der ausbezahlte Nettolohn ohne weitere Abzüge","Steuern werden direkt vom Nettolohn abgezogen","Nur Einkommen über dem Existenzminimum ist steuerpflichtig"],
+ "Berufskosten wie Arbeitsweg, auswärtige Verpflegung oder Weiterbildung dürfen deshalb abgezogen werden."],
+["einkommen","Vom Lohn zum steuerbaren Einkommen","Zu welcher Kategorie gehört der Kinderabzug?",
+ ["Sozialabzüge","Berufskosten","Allgemeine Abzüge","Sozialversicherungsbeiträge"],
+ "Sozialabzüge berücksichtigen die persönliche Situation, zum Beispiel Kinder oder die Ehe."],
+["einkommen","Vom Lohn zum steuerbaren Einkommen","Zu welcher Kategorie gehört eine Einzahlung in die Säule 3a?",
+ ["Allgemeine Abzüge","Berufskosten","Sozialabzüge","Sie darf nicht abgezogen werden"],
+ "Säule 3a, Versicherungsprämien, Schuldzinsen und Spenden sind allgemeine Abzüge."],
+["einkommen","Theorieblatt Lohnausweis","Auf dem Lohnausweis ist Feld F angekreuzt. Was folgt daraus für die Steuererklärung?",
+ ["Man darf keine oder geringere Abzüge für den Arbeitsweg machen","Man darf keinen Abzug für auswärtige Verpflegung machen","Man muss Quellensteuer bezahlen","Der Bonus muss separat versteuert werden"],
+ "Feld F bedeutet unentgeltliche Beförderung zum Arbeitsort, zum Beispiel mit einem Geschäftsauto. Feld G betrifft die Verpflegung."],
+
+["steuern","Theorieblatt Steuern","Welche dieser Zahlungen ist eine Gebühr und keine Steuer?",
+ ["Sackgebühr für den Abfall","Einkommenssteuer","Hundesteuer","Mehrwertsteuer"],
+ "Eine Gebühr ist ein Entgelt für eine konkrete staatliche Leistung. Eine Steuer wird ohne direkte Gegenleistung bezahlt."],
+["steuern","Theorieblatt Steuern","Was kennzeichnet eine direkte Steuer?",
+ ["Wer sie schuldet, bezahlt sie selbst und trägt sie auch wirtschaftlich","Sie wird über den Preis auf die Konsumierenden abgewälzt","Sie wird nur vom Bund erhoben","Sie hat für alle denselben Satz"],
+ "Beispiele sind die Einkommens- und Vermögenssteuer. Die Mehrwertsteuer ist dagegen indirekt."],
+["steuern","Theorieblatt Steuern","Was bedeutet «progressive Steuer»?",
+ ["Mit höherem Einkommen steigt auch der Steuersatz in Prozent","Alle bezahlen denselben Prozentsatz","Die Steuer steigt jedes Jahr automatisch","Die Steuer wird in Raten bezahlt"],
+ "Bei der Progression steigt die Steuer nicht nur in Franken, sondern auch in Prozent des Einkommens."],
+["steuern","Theorieblatt Steuern","Im fiktiven Tarif steigt das Einkommen von CHF 30'000 (5 %) auf CHF 60'000 (10 %). Wie verändert sich die Steuer?",
+ ["Sie vervierfacht sich, von CHF 1'500 auf CHF 6'000","Sie verdoppelt sich, von CHF 1'500 auf CHF 3'000","Sie steigt um 5 Franken","Sie bleibt gleich, weil der Satz proportional ist"],
+ "30'000 × 5 % = 1'500 und 60'000 × 10 % = 6'000. Das doppelte Einkommen führt zur vierfachen Steuer."],
+["steuern","Theorieblatt Steuern","Was ist das Ziel einer Lenkungssteuer, zum Beispiel auf Tabak?",
+ ["Ein Verhalten beeinflussen; je erfolgreicher, desto weniger nimmt der Staat ein","Möglichst viel Geld für die Staatsaufgaben einnehmen","Die Gemeinden finanzieren","Gutverdienende stärker belasten"],
+ "Fiskalsteuern sollen Geld einbringen, Lenkungssteuern ein Verhalten ändern."],
+["steuern","Theorieblatt Steuern","Ab wann ist man für sein gesamtes Einkommen und Vermögen selbst steuerpflichtig?",
+ ["Ab dem Jahr, in dem man 18 Jahre alt wird","Ab dem ersten Lehrlingslohn, auch für das Vermögen","Ab dem 20. Geburtstag","Erst wenn man aus dem Elternhaus auszieht"],
+ "Erwerbseinkommen wie der Lehrlingslohn wird schon vorher selbstständig besteuert, das gesamte Einkommen und Vermögen ab dem Jahr, in dem man 18 wird."],
+
+["zh","Steuertreppe Zürich","Was legt die Gemeinde bei der Einkommenssteuer selbst fest?",
+ ["Ihren Steuerfuss","Den Steuertarif","Wie das steuerbare Einkommen berechnet wird","Den Satz der Mehrwertsteuer"],
+ "Den Tarif bestimmt der Kanton, die Berechnung des steuerbaren Einkommens ein Bundesgesetz. Die Gemeinde bestimmt den Steuerfuss."],
+["zh","Steuertreppe Zürich","In Bülach betragen die Steuerfüsse: Kanton 95 %, Stadt 96 %, Sekundarschule 18 %. Wie hoch ist der Gesamtsteuerfuss?",
+ ["209 %","114 %","191 %","96 %"],
+ "95 % + 96 % + 18 % = 209 % der einfachen Staatssteuer."],
+["zh","Steuertreppe Zürich","Die einfache Staatssteuer beträgt CHF 5'000. Wie hoch ist die Staats- und Gemeindesteuer in Bülach (209 %), ohne Personalsteuer?",
+ ["CHF 10'450","CHF 5'209","CHF 4'750","CHF 15'450"],
+ "5'000 × 209 % = CHF 10'450. Dazu kommt im Kanton Zürich noch die Personalsteuer von CHF 24."],
+["zh","Steuertreppe Zürich","Was gibt der Grenzsteuersatz an?",
+ ["Wie viel Steuer auf einen zusätzlich verdienten Franken anfällt","Die gesamte Steuer geteilt durch das Einkommen","Den höchsten Steuersatz, den ein Kanton verlangen darf","Den Steuersatz für Personen an der Landesgrenze"],
+ "Die gesamte Steuer geteilt durch das Einkommen ist der Durchschnittssteuersatz. Wegen der Progression liegt der Grenzsteuersatz höher."],
+
+["mwst","Mehrwertsteuer erklärt","Wie hoch ist der Normalsatz der Mehrwertsteuer im Jahr 2026?",
+ ["8,1 %","7,7 %","2,6 %","8,5 %"],
+ "Der Normalsatz beträgt 8,1 %. 8,5 % wäre der neue Satz, falls die Vorlage vom 29. November 2026 angenommen wird."],
+["mwst","Mehrwertsteuer erklärt","Für welche Güter gilt der reduzierte Satz von 2,6 %?",
+ ["Güter des täglichen Bedarfs wie Lebensmittel, Bücher und Medikamente","Hotelübernachtungen","Autos und Elektronik","Restaurantbesuche"],
+ "Für Hotelübernachtungen gilt der Sondersatz von 3,8 %, für die übrigen Güter und Restaurants der Normalsatz."],
+["mwst","Mehrwertsteuer erklärt","Wozu dient der Vorsteuerabzug im Mehrphasenprinzip?",
+ ["Jede Stufe versteuert nur ihren eigenen Mehrwert, damit die Steuer nicht mehrfach anfällt","Unternehmen müssen gar keine Mehrwertsteuer abliefern","Die Konsumierenden erhalten die Steuer zurück","Der Bund verteilt die Steuer an die Kantone"],
+ "Unternehmen ziehen die beim Einkauf bezahlte MWST von der eingenommenen MWST ab. Belastet wird am Schluss nur der Endkonsum."],
+["mwst","Mehrwertsteuer erklärt","Eine Schreinerei kauft Holz für CHF 1'000 + 81 MWST und verkauft ein Möbel für CHF 3'000 + 243 MWST. Wie viel MWST liefert sie ab?",
+ ["CHF 162","CHF 243","CHF 324","CHF 81"],
+ "243 eingenommene MWST minus 81 Vorsteuer = CHF 162. Das sind 8,1 % auf ihren Mehrwert von CHF 2'000."],
+["mwst","Wer trägt die Mehrwertsteuer?","Wer trägt die Mehrwertsteuer wirtschaftlich?",
+ ["Die Konsumierenden, weil sie im Preis enthalten ist","Die Unternehmen, weil sie die Steuer abliefern","Der Bund","Nur Personen mit hohem Einkommen"],
+ "Die Unternehmen liefern die Steuer ab, wälzen sie aber über den Preis auf die Endkundinnen und Endkunden ab."],
+["mwst","Wer trägt die Mehrwertsteuer?","Warum belastet die Mehrwertsteuer Haushalte mit tiefem Einkommen in Prozent ihres Einkommens stärker?",
+ ["Sie geben einen grösseren Teil ihres Einkommens für den Konsum aus","Für sie gilt ein höherer Satz","Sie erhalten keinen Vorsteuerabzug","Sie bezahlen keine Einkommenssteuer"],
+ "Der Satz ist für alle gleich. Wer viel spart, bezahlt auf diesem Teil keine MWST. Gemessen am Einkommen wirkt die MWST deshalb regressiv."],
+["mwst","Mehrwertsteuer erklärt","Worüber stimmt die Schweiz am 29. November 2026 ab?",
+ ["Über eine höhere Mehrwertsteuer (Normalsatz 8,5 %) zur Finanzierung der 13. AHV-Rente","Über die Abschaffung des reduzierten Satzes","Über eine Mehrwertsteuer für die Kantone","Über die Senkung des Normalsatzes auf 7,7 %"],
+ "Der Normalsatz soll von 8,1 auf 8,5 % steigen, frühestens ab 2028, um die 13. AHV-Rente teilweise zu finanzieren."],
+
+["vorsorge","Theorieblatt Altersvorsorge","Welches Ziel hat die 1. Säule (AHV/IV, Ergänzungsleistungen)?",
+ ["Den Existenzbedarf decken","Den gewohnten Lebensstandard erhalten","Zusätzliche Wünsche finanzieren","Die Pensionskassen finanzieren"],
+ "Die 2. Säule soll zusammen mit der AHV den gewohnten Lebensstandard sichern, die 3. Säule zusätzliche Bedürfnisse abdecken."],
+["vorsorge","Theorieblatt Altersvorsorge","Wie viel des letzten Lohnes sollen AHV und Pensionskasse zusammen als Richtwert ersetzen?",
+ ["Rund 60 %","Rund 30 %","Rund 90 %","100 %"],
+ "Die 1. und 2. Säule sollen die gewohnte Lebenshaltung in angemessener Weise sichern, als Richtwert rund 60 % des letzten Lohnes."],
+["vorsorge","Umlage oder Kapitaldeckung","Was beschreibt das Umlageverfahren der AHV?",
+ ["Die Beiträge der heute Erwerbstätigen werden direkt an die heutigen Rentnerinnen und Rentner ausbezahlt","Jede Person spart ein eigenes Guthaben an","Der Bund bezahlt alle Renten aus der Mehrwertsteuer","Die Beiträge werden angelegt und verzinst"],
+ "Das Geld wird nicht angespart, sondern sofort umgelegt. Man spricht deshalb vom Generationenvertrag."],
+["vorsorge","Umlage oder Kapitaldeckung","Was ist das Hauptrisiko des Kapitaldeckungsverfahrens?",
+ ["Die Finanzmärkte: tiefe Zinsen und Börsenkrisen","Weniger Erwerbstätige pro Rentnerin oder Rentner","Die Inflation hat keinen Einfluss, deshalb gibt es kein Risiko","Die Höhe der Mehrwertsteuer"],
+ "Das demografische Risiko betrifft vor allem das Umlageverfahren. Weil die beiden Verfahren auf verschiedene Risiken reagieren, stützen sie sich gegenseitig."],
+["vorsorge","Theorieblatt Altersvorsorge","Warum spricht man bei der AHV von Solidarität zwischen Arm und Reich?",
+ ["Beiträge werden auf dem ganzen Lohn erhoben, die Rente ist aber nach oben begrenzt","Gutverdienende erhalten eine höhere Maximalrente","Nur Gutverdienende bezahlen AHV-Beiträge","Personen mit tiefem Einkommen zahlen keine Beiträge"],
+ "Wer viel verdient, zahlt mehr ein, als er für die eigene Maximalrente bräuchte, und finanziert damit tiefere Renten mit."],
+["vorsorge","Drei Säulen im Alter","Wie viel dürfen Angestellte mit Pensionskasse 2026 höchstens in die Säule 3a einzahlen und vom steuerbaren Einkommen abziehen?",
+ ["CHF 7'258","CHF 26'460","CHF 3'780","Unbegrenzt"],
+ "Dafür ist das Geld grundsätzlich bis fünf Jahre vor dem Referenzalter gebunden, mit Ausnahmen etwa für Wohneigentum."],
+["vorsorge","Theorieblatt Altersvorsorge","Was gilt für die 13. AHV-Rente?",
+ ["Sie wurde 2024 vom Volk angenommen und wird ab Dezember 2026 ausbezahlt","Sie wurde 2024 abgelehnt","Sie wird nur an Ehepaare ausbezahlt","Sie ersetzt die Ergänzungsleistungen"],
+ "Die 13. AHV-Rente wurde mit 58,24 % angenommen. Sie kostet jährlich über 4 Milliarden Franken."],
+
+["ahv","So entsteht die AHV-Rente","Wie viele Beitragsjahre braucht es 2026 für eine volle AHV-Rente (Vollrente)?",
+ ["44 Jahre","40 Jahre","35 Jahre","47 Jahre"],
+ "Wer weniger Beitragsjahre hat, erhält eine Teilrente."],
+["ahv","So entsteht die AHV-Rente","Zwischen welchen Werten liegt die volle AHV-Altersrente 2026 pro Monat?",
+ ["CHF 1'260 und CHF 2'520","CHF 1'000 und CHF 3'000","CHF 1'512 und CHF 3'780","CHF 2'520 und CHF 3'780"],
+ "Die Maximalrente ist doppelt so hoch wie die Minimalrente. CHF 3'780 ist das Maximum für ein Ehepaar zusammen."],
+["ahv","So entsteht die AHV-Rente","Eine Person hätte eine Vollrente von CHF 2'200, hat aber nur 33 statt 44 Beitragsjahre. Wie hoch ist ihre Teilrente?",
+ ["CHF 1'650","CHF 2'200","CHF 1'100","CHF 1'980"],
+ "Teilrente = Vollrente × Beitragsjahre ÷ 44 = 2'200 × 33 ÷ 44 = CHF 1'650. Jedes fehlende Jahr kostet also rund 1/44 der Rente."],
+["ahv","So entsteht die AHV-Rente","Was sind Erziehungsgutschriften?",
+ ["Ein fiktives Einkommen, das für Jahre mit Kindern unter 16 zum AHV-Einkommen gezählt wird","Eine Zulage, die monatlich mit dem Lohn ausbezahlt wird","Ein Steuerabzug für Kinder","Eine Prämienverbilligung der Krankenkasse"],
+ "Die Gutschrift beträgt 2026 CHF 45'360 pro Jahr (drei jährliche Minimalrenten). Sie erhöht das durchschnittliche Einkommen und damit die Rente."],
+["ahv","Drei Säulen im Alter","Um wie viel wird die AHV-Rente pro Jahr Vorbezug lebenslang gekürzt?",
+ ["Um 6,8 %","Um 1,25 %","Um 18 %","Sie wird nicht gekürzt"],
+ "Die Rente kann flexibel ab 63 bezogen werden, ist dann aber pro Vorbezugsjahr um 6,8 % tiefer."],
+
+["pk","Theorieblatt Pensionskasse","Was ist der koordinierte Lohn bei einem AHV-Jahreslohn von CHF 70'000?",
+ ["CHF 43'540","CHF 70'000","CHF 47'320","CHF 96'460"],
+ "Koordinierter Lohn = Jahreslohn minus Koordinationsabzug: 70'000 − 26'460 = CHF 43'540."],
+["pk","Theorieblatt Pensionskasse","Wie hoch ist die gesetzliche Altersgutschrift für eine 40-jährige Person?",
+ ["10 % des koordinierten Lohnes","7 % des koordinierten Lohnes","15 % des Bruttolohnes","18 % des Bruttolohnes"],
+ "Die Sätze: 25 bis 34 Jahre 7 %, 35 bis 44 Jahre 10 %, 45 bis 54 Jahre 15 %, 55 bis 65 Jahre 18 %, jeweils vom koordinierten Lohn."],
+["pk","Theorieblatt Pensionskasse","Wie hoch ist die jährliche Rente aus einem Altersguthaben von CHF 400'000 beim Mindestumwandlungssatz von 6,8 %?",
+ ["CHF 27'200","CHF 2'720","CHF 22'000","CHF 34'000"],
+ "400'000 × 6,8 % = CHF 27'200 pro Jahr, also rund CHF 2'267 pro Monat. CHF 22'000 ergäbe ein Satz von 5,5 %."],
+["pk","Theorieblatt Pensionskasse","Warum gilt der Umwandlungssatz von 6,8 % als zu hoch?",
+ ["Das Guthaben reicht ohne Zinsen nur rund 14,7 Jahre, die Lebenserwartung mit 65 ist aber höher","Weil die AHV-Rente zu tief ist","Weil der Koordinationsabzug zu hoch ist","Weil die Pensionskassen zu viele Zinsen verdienen"],
+ "100 ÷ 6,8 ≈ 14,7 Jahre. Mit 65 leben Männer im Schnitt noch rund 20, Frauen rund 23 Jahre. Die Lücke tragen teilweise die Erwerbstätigen."],
+["pk","Theorieblatt Pensionskasse","Was gilt beim Kapitalbezug aus der Pensionskasse?",
+ ["Mindestens ein Viertel des obligatorischen Guthabens muss auf Wunsch als Kapital ausbezahlt werden","Das Kapital wird jedes Jahr als Einkommen voll besteuert","Die Pensionskasse trägt danach weiterhin das Anlagerisiko","Der Entscheid kann nach der Pensionierung jederzeit geändert werden"],
+ "Das Kapital wird einmalig und zu einem reduzierten Satz besteuert. Das Risiko (Anlage, Inflation, langes Leben) trägt die Person selbst, und der Entscheid ist endgültig."],
+
+["bev","Theorieblatt Altersvorsorge","Wie hat sich das Verhältnis von Erwerbstätigen zu Personen im Rentenalter seit der Einführung der AHV verändert?",
+ ["Von 6,6 auf rund 3,4 Erwerbstätige pro Person im Rentenalter","Von 3,4 auf 6,6 Erwerbstätige pro Person im Rentenalter","Es ist ungefähr gleich geblieben","Heute gibt es mehr Personen im Rentenalter als Erwerbstätige"],
+ "Gründe sind die steigende Lebenserwartung und die Pensionierung der geburtenstarken Jahrgänge (Babyboomer)."],
+["bev","Bevölkerung Schweiz","Wie viele Kinder pro Frau braucht es ohne Zuwanderung, damit eine Bevölkerung langfristig nicht schrumpft?",
+ ["Rund 2,1","Rund 1,3","Rund 1,0","Rund 3,0"],
+ "Die Geburtenrate der Schweiz liegt seit Jahrzehnten deutlich darunter, zuletzt bei rund 1,3 Kindern pro Frau."],
+["bev","Bevölkerung Schweiz","Was trägt in den letzten Jahrzehnten am meisten zum Bevölkerungswachstum der Schweiz bei?",
+ ["Der Wanderungssaldo (mehr Ein- als Auswanderung)","Der Geburtenüberschuss","Die sinkende Lebenserwartung","Die Einbürgerungen"],
+ "Der Geburtenüberschuss (Geburten minus Todesfälle) ist klein geworden. Das Wachstum kommt vor allem aus der Zuwanderung. Einbürgerungen ändern die Bevölkerungszahl nicht."]
+];
+const L = "ABCD";
+const S = { filter:"alle", mode:"ueben", ans:{}, order:{}, only:null, evaluated:false };
+const $ = id => document.getElementById(id);
+const store = { get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}} };
+
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function newOrders(ids){ids.forEach(i=>S.order[i]=shuffle([0,1,2,3]));}
+const shown = i => S.mode==="ueben" ? S.ans[i]!==undefined : S.evaluated;
+function visible(){return Q.map((q,i)=>i).filter(i=>(S.filter==="alle"||Q[i][0]===S.filter)&&(!S.only||S.only.includes(i)));}
+function note(ok,n){ if(!n) return "–"; const x=Math.round((ok/n*5+1)*4)/4; return x.toFixed(2).replace(/0$/,"").replace(/\.0$/,""); }
+
+function setMode(m){S.mode=m;S.evaluated=false;document.querySelectorAll("[data-m]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===m));store.set("q50-mode",m);render();}
+
+function chips(){
+  const c=$("chips");c.innerHTML="";
+  ["alle",...Object.keys(T)].forEach(k=>{
+    const n=k==="alle"?Q.length:Q.filter(q=>q[0]===k).length;
+    const b=document.createElement("button");b.type="button";b.className="chip";
+    b.innerHTML='<span></span> <span class="mono"></span>';
+    b.firstChild.textContent=k==="alle"?"Alle":T[k];
+    b.lastChild.textContent=n;
+    b.setAttribute("aria-pressed",S.filter===k);
+    b.onclick=()=>{S.filter=k;S.only=null;chips();render();};
+    c.appendChild(b);
+  });
+}
+
+function render(){
+  const list=$("list");list.innerHTML="";
+  visible().forEach(i=>{
+    const [topic,src,text,opts,why]=Q[i];
+    const card=document.createElement("section");card.className="q";
+    card.innerHTML='<div class="meta"><span><span class="num"></span> · <span class="tp"></span></span><span class="src"></span></div><h2></h2><div class="opts" role="group"></div>';
+    card.querySelector(".num").textContent="Frage "+String(i+1).padStart(2,"0");
+    card.querySelector(".tp").textContent=T[topic];
+    card.querySelector(".src").textContent=shown(i)?src:"";
+    card.querySelector("h2").textContent=text;
+    const box=card.querySelector(".opts");box.setAttribute("aria-label","Antworten zu Frage "+(i+1));
+    const given=S.ans[i], show=shown(i);
+    S.order[i].forEach((o,k)=>{
+      const b=document.createElement("button");b.type="button";b.className="opt";
+      b.innerHTML='<span class="k"></span><span class="t"></span><span class="tag"></span>';
+      b.querySelector(".k").textContent=L[k];b.querySelector(".t").textContent=opts[o];
+      if(show){
+        b.disabled=true;
+        if(o===0){b.classList.add("right");b.querySelector(".tag").textContent="✓ richtig";}
+        else if(o===given){b.classList.add("wrong");b.querySelector(".tag").textContent="✗ Ihre Wahl";}
+      } else if(o===given){b.classList.add("sel");b.setAttribute("aria-pressed","true");}
+      b.onclick=()=>{S.ans[i]=o;render();};
+      box.appendChild(b);
+    });
+    if(show){
+      const fb=document.createElement("div");fb.className="fb"+(given===0?"":" no");
+      fb.innerHTML="<b></b><span></span>";
+      fb.firstChild.textContent=given===0?"✓ Richtig.":given===undefined?"Nicht beantwortet. Richtig ist: "+opts[0]:"✗ Nicht ganz. Richtig ist: "+opts[0];
+      fb.lastChild.textContent=why;card.appendChild(fb);
+    }
+    list.appendChild(card);
+  });
+  update();
+}
+
+function update(){
+  const ids=visible();let ok=0,no=0,sel=0;
+  ids.forEach(i=>{const a=S.ans[i];if(a===undefined)return;sel++;if(shown(i)){if(a===0)ok++;else no++;}});
+  if(S.mode==="test"&&S.evaluated){no=ids.length-ok;}
+  const n=ids.length, sc=$("score");
+  if(S.mode==="test"&&!S.evaluated){
+    sc.innerHTML='<span>Beantwortet: <span class="mono"></span></span>';sc.querySelector(".mono").textContent=sel+" / "+n;
+  } else {
+    sc.innerHTML='<span>✓ Richtig: <span class="mono a"></span></span><span>✗ Falsch: <span class="mono b"></span></span><span>Offen: <span class="mono c"></span></span><span>Note: <span class="mono d"></span></span>';
+    sc.querySelector(".a").textContent=ok;sc.querySelector(".b").textContent=no;sc.querySelector(".c").textContent=n-ok-no;
+    sc.querySelector(".d").textContent=note(ok,S.mode==="test"?n:ok+no);
+  }
+  $("pOk").style.width=(ok/n*100)+"%";$("pNo").style.width=(no/n*100)+"%";
+  $("pSel").style.width=(S.mode==="test"&&!S.evaluated?sel/n*100:0)+"%";
+  $("eval").classList.toggle("hide",!(S.mode==="test"&&!S.evaluated));
+  $("eval").textContent=sel<n?"Test auswerten ("+(n-sel)+" offen)":"Test auswerten";
+  $("retry").disabled=no===0;
+  const d=$("done"),finished=(S.mode==="ueben"&&ok+no===n)||(S.mode==="test"&&S.evaluated);
+  if(finished&&n){
+    d.classList.remove("hide");
+    d.innerHTML='<strong></strong><span class="note"></span><span class="t"></span>';
+    d.querySelector("strong").textContent=ok+" von "+n+" richtig";
+    d.querySelector(".note").textContent="Note "+note(ok,n);
+    d.querySelector(".t").textContent=no?"Mit «Falsche wiederholen» üben Sie gezielt die "+no+" Fragen, die noch nicht sassen.":"Alles richtig. Sehr gut!";
+  } else d.classList.add("hide");
+}
+
+$("eval").onclick=()=>{S.evaluated=true;render();window.scrollTo({top:0,behavior:"smooth"});};
+$("retry").onclick=()=>{
+  const wrong=visible().filter(i=>S.ans[i]!==0&&(S.mode==="test"||S.ans[i]!==undefined));
+  wrong.forEach(i=>delete S.ans[i]);newOrders(wrong);S.only=wrong;S.evaluated=false;render();window.scrollTo({top:0,behavior:"smooth"});
+};
+$("reset").onclick=()=>{S.ans={};S.only=null;S.evaluated=false;newOrders(Q.map((q,i)=>i));render();window.scrollTo({top:0,behavior:"smooth"});};
+document.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+
+newOrders(Q.map((q,i)=>i));
+chips();
+setMode(store.get("q50-mode")==="test"?"test":"ueben");
+})();
+</script>
+</body>
+</html>
